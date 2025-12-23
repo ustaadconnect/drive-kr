@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveKar - Ride Booking Platform</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2563eb">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/assets/images/icons/icon-192x192.png">
+    
+    <!-- Firebase SDK -->
+    <script type="module" src="/assets/js/firebase-config.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    
+    <style>
+        .city-highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+        .city-badge {
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 5px 15px;
+            margin: 5px;
+            display: inline-block;
+        }
+        .service-icon {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            transition: all 0.3s;
+        }
+        .service-icon:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-5px);
+        }
+        .step-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .install-btn-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .install-btn-container {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Install PWA Button -->
+    <div id="installContainer" class="install-btn-container">
+        <button id="installButton" class="btn btn-primary install-btn shadow-lg">
+            <i class="fas fa-download"></i> Install App
+        </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-car"></i> DriveKar
+            </a>
+            <div class="d-flex">
+                <button class="btn btn-light me-2" id="themeToggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <div id="userMenu"></div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4" id="mainContent">
+        <div class="text-center">
+            <h1 class="display-4">Welcome to DriveKar</h1>
+            <p class="lead">Pakistan's First Bid-Based Ride Service</p>
+            
+            <!-- Your Cities Highlight -->
+            <div class="city-highlight">
+                <h3><i class="fas fa-map-marker-alt"></i> Serving Your Cities</h3>
+                <div class="mt-3">
+                    <span class="city-badge">Rahim Yar Khan</span>
+                    <span class="city-badge">Sadiqabad</span>
+                    <span class="city-badge">Khanpur</span>
+                </div>
+                <p class="mt-3 mb-0">33+ areas covered with bid-based pricing</p>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="row mt-5">
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user fa-3x text-primary mb-3"></i>
+                            <h3>Rider</h3>
+                            <p>Book rides at your price. Set maximum price and choose from driver bids.</p>
+                            <a href="/pages/register.html?type=rider" class="btn btn-primary">
+                                Join as Rider
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-id-card fa-3x text-success mb-3"></i>
+                            <h3>Driver</h3>
+                            <p>Earn money with your vehicle. Bid on rides and get paid after commission.</p>
+                            <a href="/pages/register.html?type=driver" class="btn btn-success">
+                                Join as Driver
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-sign-in-alt fa-3x text-info mb-3"></i>
+                            <h3>Login</h3>
+                            <p>Existing user? Sign in to your account to book rides or manage your driver profile.</p>
+                            <a href="/pages/login.html" class="btn btn-info">
+                                Login Now
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Types -->
+            <div class="mt-5">
+                <h3>Our Vehicle Services</h3>
+                <p class="text-muted">Choose from 5 different vehicle types</p>
+                <div class="row mt-3">
+                    <div class="col-6 col-md-2 mb-3">
+                        <div class="service-icon">
+                            <i class="fas fa-motorcycle fa-2x mb-2"></i>
+                            <small>Bike</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <div class="service-icon">
+                            <i class="fas fa-rickshaw fa-2x mb-2"></i>
+                            <small>Rickshaw</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <div class="service-icon">
+                            <i class="fas fa-truck-loading fa-2x mb-2"></i>
+                            <small>Loader</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <div class="service-icon">
+                            <i class="fas fa-car fa-2x mb-2"></i>
+                            <small>Car</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-2 mb-3">
+                        <div class="service-icon">
+                            <i class="fas fa-car-alt fa-2x mb-2"></i>
+                            <small>Premium</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- How it Works -->
+            <div class="mt-5">
+                <h3>How DriveKar Works</h3>
+                <p class="text-muted">Simple 4-step process for both riders and drivers</p>
+                <div class="row mt-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <div class="step-circle mb-3" style="background: #3b82f6; color: white;">1</div>
+                                <h5>Select Area</h5>
+                                <p class="small">Choose pickup & destination from 33+ areas across 3 cities</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <div class="step-circle mb-3" style="background: #10b981; color: white;">2</div>
+                                <h5>Set Max Price</h5>
+                                <p class="small">Rider sets maximum budget for the ride</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <div class="step-circle mb-3" style="background: #f59e0b; color: white;">3</div>
+                                <h5>Drivers Bid</h5>
+                                <p class="small">Drivers bid below rider's maximum price</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <div class="step-circle mb-3" style="background: #8b5cf6; color: white;">4</div>
+                                <h5>Choose Best Bid</h5>
+                                <p class="small">Rider selects best offer and ride begins</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Information -->
+            <div class="mt-5">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h4><i class="fas fa-wallet"></i> Payment Information</h4>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="alert alert-success">
+                                    <h6><i class="fas fa-mobile-alt"></i> EasyPaisa</h6>
+                                    <p class="mb-0"><strong>Number:</strong> 0342-9774490<br>
+                                    <strong>Name:</strong> DriveKar</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-warning">
+                                    <h6><i class="fas fa-wallet"></i> JazzCash</h6>
+                                    <p class="mb-0"><strong>Number:</strong> 0300-6736998<br>
+                                    <strong>Name:</strong> M. Javaid</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-info-circle"></i> Send payment screenshot to WhatsApp: 0322-9814170 for verification
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5><i class="fas fa-car"></i> DriveKar</h5>
+                    <p>Pakistan's first bid-based ride service in Rahim Yar Khan, Sadiqabad & Khanpur</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contact Support</h5>
+                    <p>
+                        <a href="https://wa.me/923229814170" class="text-white text-decoration-none">
+                            <i class="fab fa-whatsapp"></i> 0322-9814170 (General Support)
+                        </a>
+                    </p>
+                    <p>
+                        <a href="https://wa.me/923069529752" class="text-white text-decoration-none">
+                            <i class="fab fa-whatsapp"></i> 0306-9529752 (Documents)
+                        </a>
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Payment Methods</h5>
+                    <p class="mb-1"><i class="fas fa-mobile-alt"></i> EasyPaisa: 0342-9774490</p>
+                    <p class="mb-1"><i class="fas fa-wallet"></i> JazzCash: 0300-6736998</p>
+                    <p class="mb-0"><small><i class="fas fa-shield-alt"></i> 15% commission only</small></p>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <small>&copy; 2024 DriveKar. All rights reserved.</small>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // PWA Installation
+        let deferredPrompt;
+        const installContainer = document.getElementById('installContainer');
+        const installButton = document.getElementById('installButton');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Show install button
+            installContainer.style.display = 'block';
+        });
+
+        installButton.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            
+            // Show the install prompt
+            deferredPrompt.prompt();
+            
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+                installContainer.style.display = 'none';
+            } else {
+                console.log('User dismissed the install prompt');
+            }
+            
+            // Clear the deferredPrompt variable
+            deferredPrompt = null;
+        });
+
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was installed');
+            installContainer.style.display = 'none';
+            deferredPrompt = null;
+        });
+
+        // Theme toggle
+        document.getElementById('themeToggle').addEventListener('click', function() {
+            const body = document.body;
+            const icon = this.querySelector('i');
+            
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            const themeToggle = document.getElementById('themeToggle');
+            const icon = themeToggle.querySelector('i');
+            
+            if (savedTheme === 'dark') {
+                document.body.setAttribute('data-theme', 'dark');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+        });
+    </script>
+    <script src="/assets/js/pwa.js"></script>
+    <script src="/assets/js/auth-check.js"></script>
+</body>
+</html>
