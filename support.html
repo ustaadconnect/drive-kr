@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support - DriveKar</title>
+    
+    <!-- Firebase SDK -->
+    <script type="module" src="/assets/js/firebase-config.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    
+    <style>
+        .support-category-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            height: 100%;
+        }
+        .support-category-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.1);
+        }
+        .contact-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .faq-item {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 15px 0;
+        }
+        .faq-question {
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .faq-answer {
+            display: none;
+            padding-top: 10px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/pages/dashboard.html">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <span class="navbar-text">
+                <i class="fas fa-headset"></i> Support Center
+            </span>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Support Header -->
+        <div class="text-center mb-5">
+            <h1 class="display-5">How can we help you?</h1>
+            <p class="lead text-muted">Get instant support via WhatsApp or browse FAQs</p>
+        </div>
+
+        <!-- Contact Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="contact-card">
+                    <i class="fas fa-headset fa-3x mb-3"></i>
+                    <h4>General Support</h4>
+                    <p>Account issues, ride problems, general queries</p>
+                    <a href="https://wa.me/923229814170" class="btn btn-light" target="_blank">
+                        <i class="fab fa-whatsapp"></i> 0322-9814170
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="contact-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <i class="fas fa-money-bill-wave fa-3x mb-3"></i>
+                    <h4>Payment Support</h4>
+                    <p>Wallet deposits, withdrawals, payment issues</p>
+                    <a href="https://wa.me/923429774490" class="btn btn-light" target="_blank">
+                        <i class="fab fa-whatsapp"></i> 0342-9774490
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="contact-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                    <i class="fas fa-file-upload fa-3x mb-3"></i>
+                    <h4>Document Support</h4>
+                    <p>Driver document verification, upload issues</p>
+                    <a href="https://wa.me/923069529752" class="btn btn-light" target="_blank">
+                        <i class="fab fa-whatsapp"></i> 0306-9529752
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Support Categories -->
+        <div class="row mb-4">
+            <div class="col-md-3 col-6 mb-3">
+                <div class="support-category-card" onclick="openWhatsApp('ride')">
+                    <i class="fas fa-car fa-3x text-primary mb-3"></i>
+                    <h5>Ride Issues</h5>
+                    <p class="text-muted small">Problems with booking or during ride</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="support-category-card" onclick="openWhatsApp('payment')">
+                    <i class="fas fa-wallet fa-3x text-success mb-3"></i>
+                    <h5>Payment Issues</h5>
+                    <p class="text-muted small">Wallet, deposits, withdrawals</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="support-category-card" onclick="openWhatsApp('account')">
+                    <i class="fas fa-user fa-3x text-info mb-3"></i>
+                    <h5>Account Issues</h5>
+                    <p class="text-muted small">Login, profile, verification</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3">
+                <div class="support-category-card" onclick="openWhatsApp('driver')">
+                    <i class="fas fa-id-card fa-3x text-warning mb-3"></i>
+                    <h5>Driver Support</h5>
+                    <p class="text-muted small">Documents, earnings, app issues</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Support Form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-comment-dots"></i> Quick Support Request
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Select Issue Category</label>
+                    <select class="form-select" id="issueCategory">
+                        <option value="ride">Ride Booking Issue</option>
+                        <option value="payment">Payment Issue</option>
+                        <option value="account">Account Issue</option>
+                        <option value="driver">Driver Issue</option>
+                        <option value="technical">Technical Issue</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Describe Your Issue</label>
+                    <textarea class="form-control" id="issueDescription" rows="3" 
+                              placeholder="Please describe your issue in detail..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="sendSupportRequest()">
+                    <i class="fas fa-paper-plane"></i> Send via WhatsApp
+                </button>
+            </div>
+        </div>
+
+        <!-- FAQs -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-question-circle"></i> Frequently Asked Questions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFAQ(1)">
+                        <i class="fas fa-chevron-right me-2"></i>
+                        How do I book a ride?
+                    </div>
+                    <div class="faq-answer" id="faq1">
+                        <p>1. Go to Book Ride page<br>
+                           2. Select pickup and destination areas<br>
+                           3. Choose vehicle type<br>
+                           4. Set your maximum price<br>
+                           5. Wait for driver bids<br>
+                           6. Select the best bid and ride!</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFAQ(2)">
+                        <i class="fas fa-chevron-right me-2"></i>
+                        How do I add money to my wallet?
+                    </div>
+                    <div class="faq-answer" id="faq2">
+                        <p>1. Go to Wallet page<br>
+                           2. Click "Add Funds"<br>
+                           3. Enter amount and select payment method (EasyPaisa/JazzCash)<br>
+                           4. Send payment to the provided number<br>
+                           5. Share screenshot via WhatsApp for verification<br>
+                           6. Balance will be updated within 1 hour</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFAQ(3)">
+                        <i class="fas fa-chevron-right me-2"></i>
+                        How do I become a driver?
+                    </div>
+                    <div class="faq-answer" id="faq3">
+                        <p>1. Register as a driver account<br>
+                           2. Upload required documents (CNIC, License, Vehicle Papers)<br>
+                           3. Wait for document verification (24 hours)<br>
+                           4. Once verified, go online in driver dashboard<br>
+                           5. Start receiving ride requests in your service areas</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFAQ(4)">
+                        <i class="fas fa-chevron-right me-2"></i>
+                        How does bidding work?
+                    </div>
+                    <div class="faq-answer" id="faq4">
+                        <p>1. Rider sets maximum price for ride<br>
+                           2. Drivers in the area see the ride request<br>
+                           3. Drivers bid below the maximum price<br>
+                           4. Rider sees all bids and selects the best one<br>
+                           5. 15% commission is deducted from final price<br>
+                           6. Driver receives payment after ride completion</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFAQ(5)">
+                        <i class="fas fa-chevron-right me-2"></i>
+                        What is the commission rate?
+                    </div>
+                    <div class="faq-answer" id="faq5">
+                        <p>DriveKar charges a fixed 15% commission on all completed rides. This commission is automatically deducted from the final ride price before the driver receives payment.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-address-book"></i> Contact Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>WhatsApp Numbers</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fab fa-whatsapp text-success"></i> 
+                                <strong>General Support:</strong> 0322-9814170
+                            </li>
+                            <li class="mb-2">
+                                <i class="fab fa-whatsapp text-success"></i> 
+                                <strong>Payment Support:</strong> 0342-9774490
+                            </li>
+                            <li class="mb-2">
+                                <i class="fab fa-whatsapp text-success"></i> 
+                                <strong>Document Verification:</strong> 0306-9529752
+                            </li>
+                            <li>
+                                <i class="fab fa-whatsapp text-success"></i> 
+                                <strong>JazzCash Payments:</strong> 0300-6736998 (M. Javaid)
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Service Areas</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-map-marker-alt text-primary"></i> Rahim Yar Khan</li>
+                            <li><i class="fas fa-map-marker-alt text-primary"></i> Sadiqabad</li>
+                            <li><i class="fas fa-map-marker-alt text-primary"></i> Khanpur</li>
+                        </ul>
+                        
+                        <h6 class="mt-3">Operating Hours</h6>
+                        <p class="mb-0">24/7 Support via WhatsApp</p>
+                        <small class="text-muted">Response time: Usually within 1 hour</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // WhatsApp contact numbers by category
+        const whatsappNumbers = {
+            'ride': '923229814170',
+            'payment': '923429774490',
+            'account': '923229814170',
+            'driver': '923069529752',
+            'technical': '923229814170',
+            'other': '923229814170'
+        };
+        
+        // Category messages
+        const categoryMessages = {
+            'ride': 'Ride Support Request',
+            'payment': 'Payment Support Request',
+            'account': 'Account Support Request',
+            'driver': 'Driver Support Request',
+            'technical': 'Technical Support Request',
+            'other': 'Support Request'
+        };
+        
+        function openWhatsApp(category) {
+            const number = whatsappNumbers[category] || whatsappNumbers['other'];
+            const message = `${categoryMessages[category]} - User ID: ${getUserId()}`;
+            const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+            
+            window.open(url, '_blank');
+        }
+        
+        function sendSupportRequest() {
+            const category = document.getElementById('issueCategory').value;
+            const description = document.getElementById('issueDescription').value;
+            
+            if (!description.trim()) {
+                alert('Please describe your issue');
+                return;
+            }
+            
+            const number = whatsappNumbers[category] || whatsappNumbers['other'];
+            const userId = getUserId();
+            
+            const message = `Support Request\n\nCategory: ${categoryMessages[category]}\nUser ID: ${userId}\nDescription: ${description}\n\nPlease assist.`;
+            const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+            
+            window.open(url, '_blank');
+            
+            // Clear form
+            document.getElementById('issueDescription').value = '';
+        }
+        
+        function toggleFAQ(id) {
+            const answer = document.getElementById(`faq${id}`);
+            const icon = answer.previousElementSibling.querySelector('i');
+            
+            if (answer.style.display === 'block') {
+                answer.style.display = 'none';
+                icon.className = 'fas fa-chevron-right me-2';
+            } else {
+                answer.style.display = 'block';
+                icon.className = 'fas fa-chevron-down me-2';
+            }
+        }
+        
+        function getUserId() {
+            // Get user ID from localStorage or Firebase
+            // For now, return placeholder
+            return localStorage.getItem('userId') || 'USER_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // Initialize FAQs
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all FAQ answers as hidden
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`faq${i}`).style.display = 'none';
+            }
+        });
+    </script>
+    <script type="module" src="/assets/js/auth-check.js"></script>
+</body>
+</html>

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - DriveKar</title>
+    
+    <!-- Firebase SDK -->
+    <script type="module" src="/assets/js/firebase-config.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    
+    <style>
+        .account-type-card {
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+        }
+        .account-type-card:hover {
+            transform: translateY(-5px);
+        }
+        .account-type-card.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            background-color: #e2e8f0;
+            font-weight: bold;
+        }
+        .step.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <h2 class="text-primary">
+                                <i class="fas fa-user-plus"></i> Create Account
+                            </h2>
+                            <p class="text-muted">Join DriveKar as Rider or Driver</p>
+                        </div>
+
+                        <!-- Step Indicator -->
+                        <div class="step-indicator">
+                            <div class="step active" id="step1">1</div>
+                            <div class="step" id="step2">2</div>
+                            <div class="step" id="step3">3</div>
+                        </div>
+
+                        <!-- Step 1: Account Type -->
+                        <div id="step1Content">
+                            <h4 class="text-center mb-4">Select Account Type</h4>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card account-type-card text-center p-4" 
+                                         data-account-type="rider" onclick="selectAccountType('rider')">
+                                        <i class="fas fa-user fa-3x text-primary mb-3"></i>
+                                        <h5>Rider</h5>
+                                        <p class="text-muted small">Book rides at your price</p>
+                                        <ul class="text-start small mt-3">
+                                            <li>Set maximum price for rides</li>
+                                            <li>Choose from driver bids</li>
+                                            <li>Rate drivers after ride</li>
+                                            <li>Pay via EasyPaisa or Cash</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card account-type-card text-center p-4" 
+                                         data-account-type="driver" onclick="selectAccountType('driver')">
+                                        <i class="fas fa-id-card fa-3x text-success mb-3"></i>
+                                        <h5>Driver</h5>
+                                        <p class="text-muted small">Earn money with your vehicle</p>
+                                        <ul class="text-start small mt-3">
+                                            <li>Bid on available rides</li>
+                                            <li>Set your own price</li>
+                                            <li>Receive payments after commission</li>
+                                            <li>Upload vehicle documents</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center mt-4">
+                                <button class="btn btn-primary" onclick="nextStep(2)" id="nextStep1" disabled>
+                                    Next <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Basic Information -->
+                        <div id="step2Content" style="display: none;">
+                            <h4 class="text-center mb-4">Personal Information</h4>
+                            <form id="personalInfoForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="fullName" class="form-label">Full Name *</label>
+                                        <input type="text" class="form-control" id="fullName" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="email" class="form-label">Email Address *</label>
+                                        <input type="email" class="form-control" id="email" required>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="phone" class="form-label">Phone Number *</label>
+                                        <input type="tel" class="form-control" id="phone" 
+                                               placeholder="03XX-XXXXXXX" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="cnic" class="form-label">CNIC Number *</label>
+                                        <input type="text" class="form-control" id="cnic" 
+                                               placeholder="XXXXX-XXXXXXX-X" required>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="password" class="form-label">Password *</label>
+                                        <input type="password" class="form-control" id="password" required>
+                                        <small class="text-muted">Minimum 6 characters</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="confirmPassword" class="form-label">Confirm Password *</label>
+                                        <input type="password" class="form-control" id="confirmPassword" required>
+                                        <div class="invalid-feedback" id="passwordError">
+                                            Passwords do not match
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Driver Specific Fields -->
+                                <div id="driverFields" style="display: none;">
+                                    <hr>
+                                    <h5>Driver Information</h5>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="vehicleType" class="form-label">Vehicle Type *</label>
+                                            <select class="form-select" id="vehicleType" required>
+                                                <option value="">Select Vehicle</option>
+                                                <option value="bike">Motorcycle</option>
+                                                <option value="rickshaw">Rickshaw</option>
+                                                <option value="loader">Loader Rickshaw</option>
+                                                <option value="car">Car</option>
+                                                <option value="premium">Premium Car</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="vehicleNumber" class="form-label">Vehicle Number *</label>
+                                            <input type="text" class="form-control" id="vehicleNumber" 
+                                                   placeholder="ABC-123" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <button type="button" class="btn btn-outline-secondary w-100" 
+                                                onclick="prevStep(1)">
+                                            <i class="fas fa-arrow-left"></i> Back
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button type="button" class="btn btn-primary w-100" 
+                                                onclick="validateAndNext()" id="nextStep2">
+                                            Next <i class="fas fa-arrow-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Step 3: Location Information -->
+                        <div id="step3Content" style="display: none;">
+                            <h4 class="text-center mb-4">Location Details</h4>
+                            <form id="locationForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="city" class="form-label">City *</label>
+                                        <select class="form-select" id="city" required>
+                                            <option value="">Select City</option>
+                                            <option value="rahim-yar-khan">Rahim Yar Khan</option>
+                                            <option value="sadiqabad">Sadiqabad</option>
+                                            <option value="khanpur">Khanpur</option>
+                                            <option value="other">Other City</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="area" class="form-label">Area *</label>
+                                        <select class="form-select" id="area" required disabled>
+                                            <option value="">Select Area</option>
+                                            <!-- Areas will be populated based on city -->
+                                        </select>
+                                        <input type="text" class="form-control mt-2" id="otherArea" 
+                                               placeholder="Enter your area" style="display: none;">
+                                    </div>
+                                </div>
+
+                                <!-- Driver Service Areas -->
+                                <div id="driverServiceAreas" style="display: none;">
+                                    <hr>
+                                    <h5>Service Areas</h5>
+                                    <p class="text-muted small">Select areas where you will provide service</p>
+                                    <div id="serviceAreasContainer" class="mb-3">
+                                        <!-- Dynamic areas will be added here -->
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            onclick="addServiceArea()">
+                                        <i class="fas fa-plus"></i> Add Service Area
+                                    </button>
+                                </div>
+
+                                <div class="form-check mt-3">
+                                    <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                                    <label class="form-check-label" for="termsCheck">
+                                        I agree to the <a href="#" data-bs-toggle="modal" 
+                                        data-bs-target="#termsModal">Terms & Conditions</a>
+                                    </label>
+                                </div>
+
+                                <!-- Support Contacts -->
+                                <div class="alert alert-info mt-3">
+                                    <h6><i class="fas fa-phone-alt"></i> Support Contacts</h6>
+                                    <p class="mb-1"><strong>EasyPaisa Payments:</strong> 0342-9774490</p>
+                                    <p class="mb-1"><strong>Document Verification:</strong> 0306-9529752</p>
+                                    <p class="mb-0"><strong>General Support:</strong> 0322-9814170</p>
+                                </div>
+
+                                <div class="row mt-4">
+                                    <div class="col-6">
+                                        <button type="button" class="btn btn-outline-secondary w-100" 
+                                                onclick="prevStep(2)">
+                                            <i class="fas fa-arrow-left"></i> Back
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button type="submit" class="btn btn-success w-100" id="registerBtn">
+                                            <i class="fas fa-check"></i> Create Account
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Already have account -->
+                <div class="text-center mt-3">
+                    <p>Already have an account? 
+                        <a href="/pages/login.html" class="text-decoration-none">Login here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms Modal -->
+    <div class="modal fade" id="termsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Terms & Conditions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>DriveKar Platform Agreement</h6>
+                    <ol class="small">
+                        <li>Users must provide accurate information including CNIC and contact details</li>
+                        <li>Drivers must upload valid documents (CNIC, License, Vehicle Papers)</li>
+                        <li>15% commission will be deducted from each completed ride</li>
+                        <li>Payments are verified manually via WhatsApp screenshots</li>
+                        <li>Riders set maximum price, drivers bid, rider selects driver</li>
+                        <li>No GPS tracking - location based on area selection only</li>
+                        <li>Support available via WhatsApp: 0322-9814170</li>
+                        <li>EasyPaisa payments to: 0342-9774490</li>
+                        <li>JazzCash payments to: 0300-6736998 (M. Javaid)</li>
+                        <li>Document verification: 0306-9529752</li>
+                        <li>Platform reserves right to block accounts for violations</li>
+                    </ol>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedAccountType = '';
+        
+        // City and area data
+        const cityAreas = {
+            'rahim-yar-khan': [
+                'Satellite Town', 'Model Town', 'Peoples Colony', 'Shahi Colony', 
+                'Scheme No.1', 'Scheme No.2', 'Fauji Colony', 'Railway Road', 
+                'Abu Dhabi Road', 'Katchery Road', 'Sheikh Zayed Hospital Area'
+            ],
+            'sadiqabad': [
+                'Zikria Garden', 'Jinnah Town', 'Satellite Town', 'New Town', 
+                'Public Colony', 'Arain Colony', 'Railway Road', 'Ghalla Mandi', 
+                'College Road', 'Hospital Road', 'Chowk Fawara'
+            ],
+            'khanpur': [
+                'Model Town', 'Satellite Town', 'Madina Colony', 'Gulshan Colony', 
+                'Iqbal Colony', 'Railway Colony', 'Railway Road', 'Circular Road', 
+                'College Road', 'Hospital Road', 'Adda Zahir Pir'
+            ],
+            'other': []
+        };
+
+        function selectAccountType(type) {
+            selectedAccountType = type;
+            document.querySelectorAll('.account-type-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            document.getElementById('nextStep1').disabled = false;
+            
+            // Show/hide driver fields
+            if (type === 'driver') {
+                document.getElementById('driverFields').style.display = 'block';
+                document.getElementById('driverServiceAreas').style.display = 'block';
+            } else {
+                document.getElementById('driverFields').style.display = 'none';
+                document.getElementById('driverServiceAreas').style.display = 'none';
+            }
+        }
+
+        function nextStep(step) {
+            // Hide all steps
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`step${i}Content`).style.display = 'none';
+                document.getElementById(`step${i}`).classList.remove('active');
+            }
+            
+            // Show current step
+            document.getElementById(`step${step}Content`).style.display = 'block';
+            document.getElementById(`step${step}`).classList.add('active');
+        }
+
+        function prevStep(step) {
+            nextStep(step);
+        }
+
+        function validateAndNext() {
+            // Validate password match
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                document.getElementById('confirmPassword').classList.add('is-invalid');
+                document.getElementById('passwordError').style.display = 'block';
+                return;
+            } else {
+                document.getElementById('confirmPassword').classList.remove('is-invalid');
+                document.getElementById('passwordError').style.display = 'none';
+            }
+            
+            // If driver, validate vehicle fields
+            if (selectedAccountType === 'driver') {
+                const vehicleType = document.getElementById('vehicleType').value;
+                const vehicleNumber = document.getElementById('vehicleNumber').value;
+                
+                if (!vehicleType || !vehicleNumber) {
+                    alert('Please fill all driver information fields');
+                    return;
+                }
+            }
+            
+            // Go to next step
+            nextStep(3);
+            
+            // Populate areas based on selected city
+            populateCityAreas();
+        }
+
+        // City change handler
+        function populateCityAreas() {
+            const citySelect = document.getElementById('city');
+            const areaSelect = document.getElementById('area');
+            const otherAreaInput = document.getElementById('otherArea');
+            
+            citySelect.addEventListener('change', function() {
+                const city = this.value;
+                
+                if (city === 'other') {
+                    areaSelect.disabled = true;
+                    otherAreaInput.style.display = 'block';
+                    otherAreaInput.required = true;
+                    areaSelect.innerHTML = '<option value="">Select Area</option>';
+                } else {
+                    areaSelect.disabled = false;
+                    otherAreaInput.style.display = 'none';
+                    otherAreaInput.required = false;
+                    
+                    // Populate areas
+                    areaSelect.innerHTML = '<option value="">Select Area</option>';
+                    if (cityAreas[city]) {
+                        cityAreas[city].forEach(area => {
+                            areaSelect.innerHTML += `<option value="${area.toLowerCase()}">${area}</option>`;
+                        });
+                    }
+                    
+                    // Add "Other Area" option at the end
+                    areaSelect.innerHTML += '<option value="other">Other Area</option>';
+                }
+            });
+        }
+
+        // Area change handler for "Other Area" option
+        document.getElementById('area').addEventListener('change', function() {
+            const areaValue = this.value;
+            const otherAreaInput = document.getElementById('otherArea');
+            
+            if (areaValue === 'other') {
+                otherAreaInput.style.display = 'block';
+                otherAreaInput.required = true;
+            } else {
+                otherAreaInput.style.display = 'none';
+                otherAreaInput.required = false;
+            }
+        });
+
+        // Add service area for drivers
+        function addServiceArea() {
+            const container = document.getElementById('serviceAreasContainer');
+            const div = document.createElement('div');
+            div.className = 'input-group mb-2';
+            div.innerHTML = `
+                <select class="form-select service-area-select">
+                    <option value="">Select City & Area</option>
+                    ${Object.entries(cityAreas).map(([city, areas]) => 
+                        areas.map(area => 
+                            `<option value="${city}-${area.toLowerCase()}">${city} - ${area}</option>`
+                        ).join('')
+                    ).join('')}
+                    <option value="other">Other Area</option>
+                </select>
+                <input type="text" class="form-control other-service-area" placeholder="Enter area" style="display: none;">
+                <button class="btn btn-outline-danger" type="button" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            container.appendChild(div);
+            
+            // Add event listener for "Other Area" option
+            const select = div.querySelector('.service-area-select');
+            const otherInput = div.querySelector('.other-service-area');
+            
+            select.addEventListener('change', function() {
+                if (this.value === 'other') {
+                    otherInput.style.display = 'block';
+                    otherInput.required = true;
+                } else {
+                    otherInput.style.display = 'none';
+                    otherInput.required = false;
+                }
+            });
+        }
+
+        // Form submission
+        document.getElementById('locationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!document.getElementById('termsCheck').checked) {
+                alert('You must agree to the Terms & Conditions');
+                return;
+            }
+            
+            const registerBtn = document.getElementById('registerBtn');
+            registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+            registerBtn.disabled = true;
+            
+            // Registration logic will be handled by auth.js
+            console.log('Registration form submitted');
+            
+            // Simulate registration success
+            setTimeout(() => {
+                alert('Account created successfully! Please login.');
+                window.location.href = '/pages/login.html';
+            }, 2000);
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            populateCityAreas();
+            
+            // Check URL for account type parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const type = urlParams.get('type');
+            if (type === 'rider' || type === 'driver') {
+                selectAccountType(type);
+            }
+        });
+    </script>
+    <script type="module" src="/assets/js/auth.js"></script>
+</body>
+</html>

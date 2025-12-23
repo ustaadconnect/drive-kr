@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ride Bids - DriveKar</title>
+    
+    <!-- Firebase SDK -->
+    <script type="module" src="/assets/js/firebase-config.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    
+    <style>
+        .ride-summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .bid-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .bid-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .bid-card.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+        .bid-card.best {
+            border-color: #10b981;
+            background-color: rgba(16, 185, 129, 0.05);
+        }
+        .driver-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--primary-color);
+        }
+        .timer {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-align: center;
+        }
+        .counter-offer {
+            border-left: 4px solid #f59e0b;
+            background-color: rgba(245, 158, 11, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/pages/dashboard.html">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <span class="navbar-text">
+                <i class="fas fa-gavel"></i> Ride Bids
+            </span>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Ride Summary -->
+        <div class="ride-summary-card">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-2" id="rideRoute">Satellite Town → Model Town</h4>
+                    <p class="mb-1">
+                        <i class="fas fa-car"></i> <span id="rideVehicle">Car</span> • 
+                        <i class="fas fa-users"></i> <span id="ridePassengers">2 Passengers</span>
+                    </p>
+                    <p class="mb-0">
+                        <i class="fas fa-money-bill-wave"></i> Max Price: 
+                        <strong>Rs <span id="rideMaxPrice">500</span></strong>
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="timer" id="bidTimer">03:00</div>
+                    <small class="text-white-50">Bidding ends in</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bidding Status -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 id="totalBids">0</h2>
+                        <p class="mb-0">Total Bids</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 id="lowestBid">Rs 0</h2>
+                        <p class="mb-0">Lowest Bid</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 id="averageBid">Rs 0</h2>
+                        <p class="mb-0">Average Bid</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bids List -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i> Driver Bids
+                </h5>
+                <span class="badge bg-primary" id="bidsCount">0 Bids</span>
+            </div>
+            <div class="card-body">
+                <div id="bidsList">
+                    <!-- Bids will be loaded here -->
+                    <div class="text-center py-5">
+                        <i class="fas fa-gavel fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Waiting for driver bids...</p>
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3 small text-muted">
+                            Your ride has been posted to drivers in the area. <br>
+                            Bids will start appearing in 30-60 seconds.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selected Bid Section -->
+        <div class="card mb-4" id="selectedBidSection" style="display: none;">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-check-circle"></i> Selected Bid
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="selectedBidDetails"></div>
+                <div class="mt-3">
+                    <button class="btn btn-success" onclick="confirmRide()">
+                        <i class="fas fa-check"></i> Confirm Ride with This Driver
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="deselectBid()">
+                        <i class="fas fa-times"></i> Change Selection
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Counter Offer Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exchange-alt"></i> Counter Offer
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Not satisfied with the bids? Send a counter offer to drivers.</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Counter Offer Price (PKR)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Rs</span>
+                                <input type="number" class="form-control" id="counterOfferPrice" 
+                                       min="50" max="10000" value="400">
+                            </div>
+                            <div class="form-text">
+                                Must be lower than your maximum price (Rs <span id="maxPriceDisplay">500</span>)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Message to Drivers (Optional)</label>
+                            <textarea class="form-control" id="counterOfferMessage" rows="2" 
+                                      placeholder="e.g., I can pay this price if available now"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-warning" onclick="sendCounterOffer()">
+                    <i class="fas fa-paper-plane"></i> Send Counter Offer to All Drivers
+                </button>
+            </div>
+        </div>
+
+        <!-- Bid Instructions -->
+        <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle"></i> How Bidding Works</h6>
+            <ol class="mb-0">
+                <li>Drivers in your area see your ride request</li>
+                <li>They bid below your maximum price (Rs <span id="maxPriceInfo">500</span>)</li>
+                <li>You can accept any bid, wait for more, or send counter offers</li>
+                <li>Once you accept a bid, driver details will be shared via WhatsApp</li>
+                <li>15% commission will be deducted from the final price</li>
+                <li>You can rate the driver after ride completion</li>
+            </ol>
+        </div>
+
+        <!-- WhatsApp Integration -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fab fa-whatsapp"></i> WhatsApp Communication
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>Once you select a driver, you'll receive their contact details via WhatsApp for coordination.</p>
+                <div class="d-grid gap-2">
+                    <a href="https://wa.me/923229814170" class="btn btn-success" target="_blank" id="whatsappBtn">
+                        <i class="fab fa-whatsapp"></i> Open WhatsApp for Support
+                    </a>
+                    <small class="text-muted text-center">
+                        Support: 0322-9814170 • Payments: 0342-9774490
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { auth, db } from "/assets/js/firebase-config.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, query, where, onSnapshot, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+        
+        let rideId = null;
+        let selectedBidId = null;
+        let bidTimer = null;
+        let timeLeft = 180; // 3 minutes in seconds
+        
+        // Get ride ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        rideId = urlParams.get('rideId') || 'demo-ride';
+        
+        // Check authentication
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                console.log('User logged in:', user.uid);
+                await loadRideDetails(rideId, user.uid);
+                startBidTimer();
+                listenForBids(rideId);
+            } else {
+                window.location.href = '/pages/login.html';
+            }
+        });
+        
+        async function loadRideDetails(rideId, userId) {
+            try {
+                // In real app, get from Firestore
+                // For demo, use mock data
+                const rideData = {
+                    pickup: { area: 'Satellite Town', city: 'Rahim Yar Khan' },
+                    destination: { area: 'Model Town', city: 'Rahim Yar Khan' },
+                    vehicleType: 'Car',
+                    passengers: 2,
+                    maxPrice: 500,
+                    createdAt: new Date()
+                };
+                
+                // Update UI
+                document.getElementById('rideRoute').textContent = 
+                    `${rideData.pickup.area} → ${rideData.destination.area}`;
+                document.getElementById('rideVehicle').textContent = rideData.vehicleType;
+                document.getElementById('ridePassengers').textContent = `${rideData.passengers} Passengers`;
+                document.getElementById('rideMaxPrice').textContent = rideData.maxPrice;
+                document.getElementById('maxPriceDisplay').textContent = rideData.maxPrice;
+                document.getElementById('maxPriceInfo').textContent = rideData.maxPrice;
+                
+            } catch (error) {
+                console.error('Error loading ride details:', error);
+            }
+        }
+        
+        function startBidTimer() {
+            bidTimer = setInterval(() => {
+                timeLeft--;
+                
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                
+                document.getElementById('bidTimer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(bidTimer);
+                    document.getElementById('bidTimer').textContent = '00:00';
+                    document.getElementById('bidTimer').className = 'timer text-danger';
+                    
+                    // Auto-select best bid if not selected
+                    if (!selectedBidId) {
+                        autoSelectBestBid();
+                    }
+                }
+            }, 1000);
+        }
+        
+        function listenForBids(rideId) {
+            // Mock bids for demo
+            const mockBids = [
+                {
+                    id: 'bid1',
+                    driverId: 'driver1',
+                    driverName: 'Ali Ahmed',
+                    driverRating: 4.8,
+                    totalRides: 125,
+                    vehicle: 'Toyota Corolla 2020',
+                    vehicleNumber: 'RYH-123',
+                    bidPrice: 450,
+                    bidTime: new Date(),
+                    message: 'Available now, AC car'
+                },
+                {
+                    id: 'bid2',
+                    driverId: 'driver2',
+                    driverName: 'Mohammad Khan',
+                    driverRating: 4.5,
+                    totalRides: 89,
+                    vehicle: 'Honda City 2019',
+                    vehicleNumber: 'SAD-456',
+                    bidPrice: 480,
+                    bidTime: new Date(Date.now() - 30000),
+                    message: '5 minutes away'
+                },
+                {
+                    id: 'bid3',
+                    driverId: 'driver3',
+                    driverName: 'Usman Ali',
+                    driverRating: 4.9,
+                    totalRides: 210,
+                    vehicle: 'Suzuki Cultus 2021',
+                    vehicleNumber: 'KHP-789',
+                    bidPrice: 420,
+                    bidTime: new Date(Date.now() - 60000),
+                    message: 'Best price, reliable service'
+                }
+            ];
+            
+            // Simulate bid arrival
+            setTimeout(() => {
+                updateBidsList(mockBids);
+            }, 2000);
+            
+            // Simulate new bid after 30 seconds
+            setTimeout(() => {
+                const newBid = {
+                    id: 'bid4',
+                    driverId: 'driver4',
+                    driverName: 'Bilal Raza',
+                    driverRating: 4.7,
+                    totalRides: 156,
+                    vehicle: 'Toyota Corolla 2021',
+                    vehicleNumber: 'RYH-999',
+                    bidPrice: 400,
+                    bidTime: new Date(),
+                    message: 'Lowest price guaranteed'
+                };
+                
+                mockBids.push(newBid);
+                updateBidsList(mockBids);
+            }, 30000);
+        }
+        
+        function updateBidsList(bids) {
+            const bidsList = document.getElementById('bidsList');
+            const totalBids = document.getElementById('totalBids');
+            const bidsCount = document.getElementById('bidsCount');
+            const lowestBid = document.getElementById('lowestBid');
+            const averageBid = document.getElementById('averageBid');
+            
+            // Sort bids by price (lowest first)
+            bids.sort((a, b) => a.bidPrice - b.bidPrice);
+            
+            // Update counts
+            totalBids.textContent = bids.length;
+            bidsCount.textContent = `${bids.length} Bids`;
+            
+            // Calculate lowest and average
+            if (bids.length > 0) {
+                const lowest = Math.min(...bids.map(b => b.bidPrice));
+                const average = bids.reduce((sum, b) => sum + b.bidPrice, 0) / bids.length;
+                
+                lowestBid.textContent = `Rs ${lowest}`;
+                averageBid.textContent = `Rs ${Math.round(average)}`;
+            }
+            
+            // Update bids list
+            bidsList.innerHTML = '';
+            bids.forEach((bid, index) => {
+                const isBest = index === 0; // Lowest price is best
+                const isSelected = bid.id === selectedBidId;
+                
+                bidsList.innerHTML += createBidCard(bid, isBest, isSelected);
+            });
+            
+            // Add event listeners to bid cards
+            document.querySelectorAll('.bid-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const bidId = this.dataset.bidId;
+                    selectBid(bidId, bids);
+                });
+            });
+        }
+        
+        function createBidCard(bid, isBest = false, isSelected = false) {
+            const timeAgo = getTimeAgo(bid.bidTime);
+            let cardClass = 'bid-card';
+            if (isBest) cardClass += ' best';
+            if (isSelected) cardClass += ' selected';
+            
+            return `
+                <div class="${cardClass}" data-bid-id="${bid.id}">
+                    <div class="row align-items-center">
+                        <div class="col-md-1 text-center">
+                            <div class="driver-avatar">
+                                ${bid.driverName.charAt(0)}
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <h6 class="mb-1">${bid.driverName}</h6>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-warning me-2">
+                                    <i class="fas fa-star"></i> ${bid.driverRating}
+                                </span>
+                                <small class="text-muted">
+                                    ${bid.totalRides} rides • ${bid.vehicle}
+                                </small>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-car"></i> ${bid.vehicleNumber}
+                            </small>
+                            ${bid.message ? `<p class="mt-1 mb-0 small">"${bid.message}"</p>` : ''}
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3 class="text-primary mb-0">Rs ${bid.bidPrice}</h3>
+                            <small class="text-muted">
+                                Save: Rs ${500 - bid.bidPrice}
+                            </small>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <small class="text-muted d-block">${timeAgo}</small>
+                            ${isBest ? `<span class="badge bg-success">Best Price</span>` : ''}
+                            ${isSelected ? `<span class="badge bg-primary">Selected</span>` : ''}
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="selectBid('${bid.id}', event)">
+                                    Select Bid
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function selectBid(bidId, bids) {
+            selectedBidId = bidId;
+            const bid = bids.find(b => b.id === bidId);
+            
+            // Update selected bid section
+            document.getElementById('selectedBidSection').style.display = 'block';
+            document.getElementById('selectedBidDetails').innerHTML = `
+                <div class="row align-items-center">
+                    <div class="col-md-2 text-center">
+                        <div class="driver-avatar" style="width: 80px; height: 80px; font-size: 32px;">
+                            ${bid.driverName.charAt(0)}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>${bid.driverName}</h5>
+                        <p class="mb-1">
+                            <i class="fas fa-star text-warning"></i> ${bid.driverRating} • 
+                            <i class="fas fa-car"></i> ${bid.vehicle}
+                        </p>
+                        <p class="mb-1"><strong>Vehicle Number:</strong> ${bid.vehicleNumber}</p>
+                        <p class="mb-0"><strong>Message:</strong> "${bid.message}"</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <h2 class="text-success">Rs ${bid.bidPrice}</h2>
+                        <p class="mb-0">
+                            <small>You save: <strong>Rs ${500 - bid.bidPrice}</strong></small>
+                        </p>
+                        <p class="mb-0">
+                            <small>After 15% commission: <strong>Rs ${Math.round(bid.bidPrice * 0.85)}</strong></small>
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            // Update bids list
+            updateBidsList(bids);
+            
+            // Scroll to selected bid section
+            document.getElementById('selectedBidSection').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function deselectBid() {
+            selectedBidId = null;
+            document.getElementById('selectedBidSection').style.display = 'none';
+            
+            // Reload bids to remove selection
+            // In real app, you would reload from Firestore
+        }
+        
+        function autoSelectBestBid() {
+            // Auto-select lowest bid when timer ends
+            const bids = document.querySelectorAll('.bid-card');
+            if (bids.length > 0 && !selectedBidId) {
+                const firstBid = bids[0];
+                const bidId = firstBid.dataset.bidId;
+                
+                // Simulate click on best bid
+                firstBid.click();
+                
+                alert('Bidding time ended! The best bid has been auto-selected for you.');
+            }
+        }
+        
+        function sendCounterOffer() {
+            const price = document.getElementById('counterOfferPrice').value;
+            const message = document.getElementById('counterOfferMessage').value;
+            
+            if (!price || price < 50) {
+                alert('Please enter a valid counter offer price (minimum Rs 50)');
+                return;
+            }
+            
+            if (price >= 500) {
+                alert('Counter offer must be lower than your maximum price (Rs 500)');
+                return;
+            }
+            
+            // Send counter offer to all drivers
+            alert(`Counter offer sent! You offered Rs ${price} to all drivers. ${message ? `Message: "${message}"` : ''}`);
+            
+            // In real app, update Firestore and send notifications
+        }
+        
+        async function confirmRide() {
+            if (!selectedBidId) {
+                alert('Please select a bid first');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to confirm this ride with the selected driver?')) {
+                return;
+            }
+            
+            // In real app, update ride status in Firestore
+            // For demo, show success message
+            
+            alert('Ride confirmed! Driver details have been sent to your WhatsApp.');
+            
+            // Redirect to ride tracking page
+            setTimeout(() => {
+                window.location.href = '/pages/ride-tracking.html?rideId=' + rideId;
+            }, 2000);
+        }
+        
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
+            return Math.floor(seconds / 86400) + ' days ago';
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update WhatsApp button with ride info
+            const whatsappBtn = document.getElementById('whatsappBtn');
+            const message = `Ride Booking Support - Ride ID: ${rideId}`;
+            whatsappBtn.href = `https://wa.me/923229814170?text=${encodeURIComponent(message)}`;
+        });
+    </script>
+</body>
+</html>

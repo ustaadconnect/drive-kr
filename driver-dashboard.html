@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard - DriveKar</title>
+    
+    <!-- Firebase SDK -->
+    <script type="module" src="/assets/js/firebase-config.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    
+    <style>
+        .driver-stats-card {
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .driver-stats-card.earnings { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .driver-stats-card.rides { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+        .driver-stats-card.rating { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .driver-stats-card.online { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+        
+        .ride-request-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        .ride-request-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .ride-request-card.high-demand {
+            border-color: #ef4444;
+            background-color: rgba(239, 68, 68, 0.05);
+        }
+        
+        .online-toggle {
+            width: 60px;
+            height: 30px;
+            background-color: #e2e8f0;
+            border-radius: 15px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .online-toggle.active {
+            background-color: #10b981;
+        }
+        .toggle-slider {
+            width: 26px;
+            height: 26px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s;
+        }
+        .online-toggle.active .toggle-slider {
+            left: 32px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-id-card"></i> DriveKar Driver
+            </a>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle"></i> Driver
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/pages/profile.html">
+                            <i class="fas fa-user"></i> Profile
+                        </a></li>
+                        <li><a class="dropdown-item" href="/pages/wallet.html">
+                            <i class="fas fa-wallet"></i> Earnings
+                        </a></li>
+                        <li><a class="dropdown-item" href="/pages/driver-rides.html">
+                            <i class="fas fa-history"></i> Ride History
+                        </a></li>
+                        <li><a class="dropdown-item" href="/pages/document-upload.html">
+                            <i class="fas fa-file-upload"></i> Documents
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Driver Status -->
+        <div class="alert alert-success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">Welcome, <span id="driverName">Driver</span>!</h4>
+                    <p class="mb-0">
+                        <i class="fas fa-car"></i> <span id="driverVehicle">Toyota Corolla</span> • 
+                        <span id="driverStatus" class="badge bg-danger">Offline</span>
+                    </p>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="me-3">Go Online:</span>
+                    <div class="online-toggle" id="onlineToggle" onclick="toggleOnlineStatus()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Driver Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3 col-6">
+                <div class="driver-stats-card earnings">
+                    <h2 id="totalEarnings">Rs 0</h2>
+                    <p class="mb-0">Total Earnings</p>
+                    <small><i class="fas fa-money-bill-wave"></i> After commission</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="driver-stats-card rides">
+                    <h2 id="completedRides">0</h2>
+                    <p class="mb-0">Completed Rides</p>
+                    <small><i class="fas fa-check-circle"></i> This month</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="driver-stats-card rating">
+                    <h2 id="driverRating">0.0</h2>
+                    <p class="mb-0">Your Rating</p>
+                    <small><i class="fas fa-star"></i> From riders</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="driver-stats-card online">
+                    <h2 id="availableRides">0</h2>
+                    <p class="mb-0">Available Rides</p>
+                    <small><i class="fas fa-bell"></i> In your area</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Ride Requests -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-bell"></i> Available Ride Requests
+                </h5>
+                <span class="badge bg-primary" id="rideRequestsCount">0 Requests</span>
+            </div>
+            <div class="card-body">
+                <div id="rideRequestsList">
+                    <!-- Ride requests will be loaded here -->
+                    <div class="text-center py-5" id="noRidesMessage">
+                        <i class="fas fa-car fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No ride requests in your service area</p>
+                        <p class="small text-muted">
+                            Go online to receive ride requests in your selected service areas.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Ride -->
+        <div class="card mb-4" id="activeRideSection" style="display: none;">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt"></i> Active Ride
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="activeRideDetails"></div>
+                <div class="mt-3">
+                    <button class="btn btn-success me-2" onclick="startRide()">
+                        <i class="fas fa-play"></i> Start Ride
+                    </button>
+                    <button class="btn btn-danger" onclick="cancelRide()">
+                        <i class="fas fa-times"></i> Cancel Ride
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Schedule -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-alt"></i> Today's Schedule
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Pickup</th>
+                                <th>Destination</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="todaySchedule">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    No rides scheduled for today
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-wallet fa-3x text-success mb-3"></i>
+                        <h5>My Earnings</h5>
+                        <p class="text-muted small">View earnings and request withdrawal</p>
+                        <a href="/pages/wallet.html" class="btn btn-success">
+                            View Earnings
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-file-upload fa-3x text-warning mb-3"></i>
+                        <h5>Documents</h5>
+                        <p class="text-muted small">Upload and check document status</p>
+                        <a href="/pages/document-upload.html" class="btn btn-warning">
+                            View Documents
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-headset fa-3x text-info mb-3"></i>
+                        <h5>Support</h5>
+                        <p class="text-muted small">Get help and contact admin</p>
+                        <a href="/pages/support.html" class="btn btn-info">
+                            Contact Support
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Support Information -->
+        <div class="alert alert-info">
+            <h6><i class="fas fa-headset"></i> Driver Support</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>General Support:</strong></p>
+                    <a href="https://wa.me/923229814170" class="text-decoration-none">
+                        <i class="fab fa-whatsapp text-success"></i> 0322-9814170
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>Document Verification:</strong></p>
+                    <a href="https://wa.me/923069529752" class="text-decoration-none">
+                        <i class="fab fa-whatsapp text-success"></i> 0306-9529752
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>Payment Issues:</strong></p>
+                    <a href="https://wa.me/923429774490" class="text-decoration-none">
+                        <i class="fab fa-whatsapp text-success"></i> 0342-9774490
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { auth, db } from "/assets/js/firebase-config.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+        
+        let driverId = null;
+        let isOnline = false;
+        
+        // Check authentication
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                driverId = user.uid;
+                console.log('Driver logged in:', driverId);
+                await loadDriverData(driverId);
+                await loadAvailableRides(driverId);
+                await loadTodaySchedule(driverId);
+            } else {
+                window.location.href = '/pages/login.html';
+            }
+        });
+        
+        async function loadDriverData(userId) {
+            try {
+                const userDoc = await getDoc(doc(db, 'users', userId));
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    
+                    // Update driver info
+                    document.getElementById('driverName').textContent = userData.fullName || 'Driver';
+                    document.getElementById('driverVehicle').textContent = 
+                        `${userData.vehicleType || 'Vehicle'} - ${userData.vehicleNumber || ''}`;
+                    
+                    // Update stats
+                    document.getElementById('totalEarnings').textContent = `Rs ${userData.totalEarnings || 0}`;
+                    document.getElementById('completedRides').textContent = userData.completedRides || 0;
+                    document.getElementById('driverRating').textContent = userData.rating?.toFixed(1) || '0.0';
+                    
+                    // Set online status
+                    isOnline = userData.onlineStatus || false;
+                    updateOnlineStatusUI();
+                }
+            } catch (error) {
+                console.error('Error loading driver data:', error);
+            }
+        }
+        
+        async function loadAvailableRides(driverId) {
+            try {
+                // Get driver's service areas
+                const userDoc = await getDoc(doc(db, 'users', driverId));
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const serviceAreas = userData.serviceAreas || [];
+                    
+                    if (serviceAreas.length === 0 || !isOnline) {
+                        return;
+                    }
+                    
+                    // Query rides in driver's service areas
+                    // This is simplified for demo
+                    const ridesQuery = query(
+                        collection(db, 'rides'),
+                        where('status', '==', 'bidding'),
+                        where('vehicleType', '==', userData.vehicleType)
+                    );
+                    
+                    const querySnapshot = await getDocs(ridesQuery);
+                    const rideRequestsList = document.getElementById('rideRequestsList');
+                    const rideRequestsCount = document.getElementById('rideRequestsCount');
+                    const availableRides = document.getElementById('availableRides');
+                    const noRidesMessage = document.getElementById('noRidesMessage');
+                    
+                    if (querySnapshot.empty) {
+                        rideRequestsCount.textContent = '0 Requests';
+                        availableRides.textContent = '0';
+                        noRidesMessage.style.display = 'block';
+                    } else {
+                        rideRequestsCount.textContent = `${querySnapshot.size} Requests`;
+                        availableRides.textContent = querySnapshot.size;
+                        noRidesMessage.style.display = 'none';
+                        rideRequestsList.innerHTML = '';
+                        
+                        querySnapshot.forEach((docSnapshot) => {
+                            const ride = docSnapshot.data();
+                            ride.id = docSnapshot.id;
+                            rideRequestsList.innerHTML += createRideRequestCard(ride);
+                        });
+                        
+                        // Add event listeners to bid buttons
+                        document.querySelectorAll('.bid-btn').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const rideId = this.dataset.rideId;
+                                placeBid(rideId);
+                            });
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading available rides:', error);
+            }
+        }
+        
+        function createRideRequestCard(ride) {
+            const timeAgo = getTimeAgo(ride.createdAt?.toDate() || new Date());
+            
+            return `
+                <div class="ride-request-card ${ride.urgent ? 'high-demand' : ''}">
+                    <div class="row align-items-center">
+                        <div class="col-md-5">
+                            <h6 class="mb-1">${ride.pickup?.area || 'Pickup'} → ${ride.destination?.area || 'Destination'}</h6>
+                            <p class="mb-1 small">
+                                <i class="fas fa-user"></i> ${ride.passengers || 1} Passenger • 
+                                <i class="fas fa-clock"></i> ${timeAgo}
+                            </p>
+                            ${ride.instructions ? `<p class="mb-0 small"><em>"${ride.instructions}"</em></p>` : ''}
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h5 class="text-primary mb-0">Rs ${ride.maxPrice || 0}</h5>
+                            <small class="text-muted">Max Price</small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="mb-2">
+                                <input type="number" class="form-control form-control-sm d-inline-block w-50" 
+                                       id="bidPrice-${ride.id}" placeholder="Your bid" 
+                                       min="50" max="${ride.maxPrice || 500}">
+                            </div>
+                            <button class="btn btn-sm btn-primary bid-btn" data-ride-id="${ride.id}">
+                                <i class="fas fa-gavel"></i> Place Bid
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="viewRideDetails('${ride.id}')">
+                                Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function loadTodaySchedule(driverId) {
+            try {
+                // Get today's rides for this driver
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const ridesQuery = query(
+                    collection(db, 'rides'),
+                    where('driverId', '==', driverId),
+                    where('status', 'in', ['accepted', 'active', 'scheduled'])
+                );
+                
+                const querySnapshot = await getDocs(ridesQuery);
+                const todaySchedule = document.getElementById('todaySchedule');
+                
+                if (querySnapshot.empty) {
+                    return;
+                }
+                
+                todaySchedule.innerHTML = '';
+                querySnapshot.forEach((docSnapshot) => {
+                    const ride = docSnapshot.data();
+                    todaySchedule.innerHTML += createScheduleRow(ride);
+                });
+                
+            } catch (error) {
+                console.error('Error loading today schedule:', error);
+            }
+        }
+        
+        function createScheduleRow(ride) {
+            const statusColors = {
+                'scheduled': 'warning',
+                'accepted': 'info',
+                'active': 'success',
+                'completed': 'secondary',
+                'cancelled': 'danger'
+            };
+            
+            const statusText = {
+                'scheduled': 'Scheduled',
+                'accepted': 'Accepted',
+                'active': 'Active',
+                'completed': 'Completed',
+                'cancelled': 'Cancelled'
+            };
+            
+            const time = ride.scheduledTime ? 
+                new Date(ride.scheduledTime.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 
+                'ASAP';
+            
+            return `
+                <tr>
+                    <td>${time}</td>
+                    <td>${ride.pickup?.area || '-'}</td>
+                    <td>${ride.destination?.area || '-'}</td>
+                    <td>Rs ${ride.finalPrice || ride.maxPrice || 0}</td>
+                    <td>
+                        <span class="badge bg-${statusColors[ride.status]}">
+                            ${statusText[ride.status]}
+                        </span>
+                    </td>
+                    <td>
+                        ${ride.status === 'accepted' ? `
+                            <button class="btn btn-sm btn-success" onclick="startRide('${ride.id}')">
+                                Start
+                            </button>
+                        ` : ''}
+                        ${ride.status === 'active' ? `
+                            <button class="btn btn-sm btn-primary" onclick="completeRide('${ride.id}')">
+                                Complete
+                            </button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `;
+        }
+        
+        async function placeBid(rideId) {
+            const bidPrice = document.getElementById(`bidPrice-${rideId}`).value;
+            
+            if (!bidPrice || bidPrice < 50) {
+                alert('Please enter a valid bid price (minimum Rs 50)');
+                return;
+            }
+            
+            try {
+                // Get ride details to check max price
+                const rideDoc = await getDoc(doc(db, 'rides', rideId));
+                if (rideDoc.exists()) {
+                    const ride = rideDoc.data();
+                    
+                    if (parseInt(bidPrice) >= ride.maxPrice) {
+                        alert(`Your bid must be less than the maximum price (Rs ${ride.maxPrice})`);
+                        return;
+                    }
+                    
+                    // Place bid in Firestore
+                    await addDoc(collection(db, 'bids'), {
+                        rideId: rideId,
+                        driverId: driverId,
+                        driverName: document.getElementById('driverName').textContent,
+                        bidPrice: parseInt(bidPrice),
+                        status: 'pending',
+                        createdAt: new Date()
+                    });
+                    
+                    alert(`Bid placed successfully! You bid Rs ${bidPrice} for this ride.`);
+                    
+                    // Update UI
+                    const btn = document.querySelector(`[data-ride-id="${rideId}"]`);
+                    btn.innerHTML = '<i class="fas fa-check"></i> Bid Placed';
+                    btn.className = 'btn btn-sm btn-success';
+                    btn.disabled = true;
+                    
+                }
+            } catch (error) {
+                console.error('Error placing bid:', error);
+                alert('Failed to place bid: ' + error.message);
+            }
+        }
+        
+        function viewRideDetails(rideId) {
+            // In real app, show modal with ride details
+            alert(`Ride details for ID: ${rideId}\nClick "Place Bid" to bid on this ride.`);
+        }
+        
+        function toggleOnlineStatus() {
+            isOnline = !isOnline;
+            updateOnlineStatusUI();
+            updateDriverOnlineStatus();
+            
+            if (isOnline) {
+                loadAvailableRides(driverId);
+            } else {
+                // Clear available rides
+                document.getElementById('rideRequestsList').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-car fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">You are currently offline</p>
+                        <p class="small text-muted">
+                            Go online to receive ride requests in your selected service areas.
+                        </p>
+                    </div>
+                `;
+                document.getElementById('rideRequestsCount').textContent = '0 Requests';
+                document.getElementById('availableRides').textContent = '0';
+            }
+        }
+        
+        function updateOnlineStatusUI() {
+            const toggle = document.getElementById('onlineToggle');
+            const statusBadge = document.getElementById('driverStatus');
+            
+            if (isOnline) {
+                toggle.classList.add('active');
+                statusBadge.textContent = 'Online';
+                statusBadge.className = 'badge bg-success';
+            } else {
+                toggle.classList.remove('active');
+                statusBadge.textContent = 'Offline';
+                statusBadge.className = 'badge bg-danger';
+            }
+        }
+        
+        async function updateDriverOnlineStatus() {
+            try {
+                await updateDoc(doc(db, 'users', driverId), {
+                    onlineStatus: isOnline,
+                    lastOnline: new Date()
+                });
+            } catch (error) {
+                console.error('Error updating online status:', error);
+            }
+        }
+        
+        function startRide(rideId) {
+            if (confirm('Start this ride? You will be connected with the rider via WhatsApp.')) {
+                alert('Ride started! Contact rider via WhatsApp for pickup details.');
+                // In real app, update ride status and send notifications
+            }
+        }
+        
+        function completeRide(rideId) {
+            if (confirm('Mark this ride as completed?')) {
+                const amount = Math.floor(Math.random() * 500) + 200;
+                alert(`Ride completed! You earned Rs ${amount} (after 15% commission).`);
+                // In real app, update ride status and process payment
+            }
+        }
+        
+        function cancelRide() {
+            if (confirm('Cancel this active ride?')) {
+                alert('Ride cancelled. Please inform the rider.');
+                // In real app, update ride status
+                document.getElementById('activeRideSection').style.display = 'none';
+            }
+        }
+        
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
+            return Math.floor(seconds / 86400) + ' days ago';
+        }
+        
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                // Go offline before logout
+                if (isOnline) {
+                    await updateDoc(doc(db, 'users', driverId), {
+                        onlineStatus: false,
+                        lastOnline: new Date()
+                    });
+                }
+                
+                await signOut(auth);
+                window.location.href = '/pages/login.html';
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('Logout failed: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

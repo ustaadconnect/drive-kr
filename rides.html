@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ride History - DriveKar</title>
+    
+    <!-- Firebase SDK -->
+    <script type="module" src="/assets/js/firebase-config.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    
+    <style>
+        .ride-history-card {
+            border-left: 4px solid;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        .ride-history-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .ride-history-card.completed { border-left-color: #10b981; }
+        .ride-history-card.cancelled { border-left-color: #ef4444; }
+        .ride-history-card.active { border-left-color: #3b82f6; }
+        .ride-history-card.pending { border-left-color: #f59e0b; }
+        
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .receipt-modal-img {
+            max-height: 300px;
+            object-fit: contain;
+        }
+        
+        .stats-card-small {
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/pages/dashboard.html">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <span class="navbar-text">
+                <i class="fas fa-history"></i> Ride History
+            </span>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Stats Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3 col-6">
+                <div class="stats-card-small" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h5 id="totalRidesCount">0</h5>
+                    <small>Total Rides</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stats-card-small" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <h5 id="completedRidesCount">0</h5>
+                    <small>Completed</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stats-card-small" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                    <h5 id="totalSpentAmount">Rs 0</h5>
+                    <small>Total Spent</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stats-card-small" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                    <h5 id="totalSavedAmount">Rs 0</h5>
+                    <small>Total Saved</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-filter"></i> Filter Rides
+                </h5>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-outline-primary filter-btn active" data-filter="all">
+                        All Rides
+                    </button>
+                    <button class="btn btn-outline-primary filter-btn" data-filter="completed">
+                        Completed
+                    </button>
+                    <button class="btn btn-outline-primary filter-btn" data-filter="cancelled">
+                        Cancelled
+                    </button>
+                    <button class="btn btn-outline-primary filter-btn" data-filter="active">
+                        Active
+                    </button>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Date Range</label>
+                        <div class="input-group">
+                            <input type="date" class="form-control" id="dateFrom">
+                            <span class="input-group-text">to</span>
+                            <input type="date" class="form-control" id="dateTo">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Vehicle Type</label>
+                        <select class="form-select" id="vehicleFilter">
+                            <option value="all">All Vehicles</option>
+                            <option value="bike">Motorcycle</option>
+                            <option value="rickshaw">Rickshaw</option>
+                            <option value="loader">Loader</option>
+                            <option value="car">Car</option>
+                            <option value="premium">Premium Car</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rides List -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i> Your Rides
+                </h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="exportRides()">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="ridesList">
+                    <!-- Rides will be loaded here -->
+                    <div class="text-center py-5">
+                        <i class="fas fa-car fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No rides found</p>
+                        <a href="/pages/book-ride.html" class="btn btn-primary">
+                            Book Your First Ride
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                <nav class="mt-4" id="pagination" style="display: none;">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Previous</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Receipts Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-receipt"></i> Ride Receipts
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Download or view receipts for completed rides.</p>
+                <div id="receiptsList">
+                    <!-- Receipts will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ride Details Modal -->
+    <div class="modal fade" id="rideDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ride Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="rideDetailsContent">
+                    <!-- Ride details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="generateReceipt()">
+                        <i class="fas fa-receipt"></i> Generate Receipt
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div class="modal fade" id="receiptModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ride Receipt</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="receiptContent">
+                    <!-- Receipt will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" onclick="printReceipt()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="downloadReceipt()">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { auth, db } from "/assets/js/firebase-config.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+        
+        let currentRides = [];
+        let currentFilter = 'all';
+        
+        // Check authentication
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                console.log('User logged in:', user.uid);
+                await loadRides(user.uid);
+                await loadRideStats(user.uid);
+                setupFilters();
+            } else {
+                window.location.href = '/pages/login.html';
+            }
+        });
+        
+        async function loadRides(userId) {
+            try {
+                const ridesQuery = query(
+                    collection(db, 'rides'),
+                    where('riderId', '==', userId),
+                    orderBy('createdAt', 'desc')
+                );
+                
+                const querySnapshot = await getDocs(ridesQuery);
+                currentRides = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const ride = doc.data();
+                    ride.id = doc.id;
+                    currentRides.push(ride);
+                });
+                
+                updateRidesList();
+                
+            } catch (error) {
+                console.error('Error loading rides:', error);
+                // For demo, use mock data
+                loadMockRides();
+            }
+        }
+        
+        function loadMockRides() {
+            currentRides = [
+                {
+                    id: 'ride1',
+                    pickup: { area: 'Satellite Town', city: 'Rahim Yar Khan' },
+                    destination: { area: 'Model Town', city: 'Rahim Yar Khan' },
+                    vehicleType: 'car',
+                    maxPrice: 500,
+                    finalPrice: 450,
+                    driverName: 'Ali Ahmed',
+                    driverRating: 4.8,
+                    status: 'completed',
+                    createdAt: new Date(Date.now() - 86400000), // 1 day ago
+                    completedAt: new Date(Date.now() - 86300000),
+                    passengers: 2,
+                    paymentMethod: 'cash'
+                },
+                {
+                    id: 'ride2',
+                    pickup: { area: 'Peoples Colony', city: 'Rahim Yar Khan' },
+                    destination: { area: 'Railway Road', city: 'Rahim Yar Khan' },
+                    vehicleType: 'bike',
+                    maxPrice: 250,
+                    finalPrice: 200,
+                    driverName: 'Ahmed Khan',
+                    driverRating: 4.5,
+                    status: 'completed',
+                    createdAt: new Date(Date.now() - 172800000), // 2 days ago
+                    completedAt: new Date(Date.now() - 171800000),
+                    passengers: 1,
+                    paymentMethod: 'wallet'
+                },
+                {
+                    id: 'ride3',
+                    pickup: { area: 'Zikria Garden', city: 'Sadiqabad' },
+                    destination: { area: 'College Road', city: 'Sadiqabad' },
+                    vehicleType: 'rickshaw',
+                    maxPrice: 300,
+                    finalPrice: null,
+                    driverName: null,
+                    status: 'cancelled',
+                    createdAt: new Date(Date.now() - 259200000), // 3 days ago
+                    cancelledAt: new Date(Date.now() - 259100000),
+                    passengers: 3,
+                    paymentMethod: 'cash'
+                },
+                {
+                    id: 'ride4',
+                    pickup: { area: 'Model Town', city: 'Khanpur' },
+                    destination: { area: 'Hospital Road', city: 'Khanpur' },
+                    vehicleType: 'car',
+                    maxPrice: 600,
+                    finalPrice: 550,
+                    driverName: 'Usman Ali',
+                    driverRating: 4.9,
+                    status: 'completed',
+                    createdAt: new Date(Date.now() - 345600000), // 4 days ago
+                    completedAt: new Date(Date.now() - 344600000),
+                    passengers: 4,
+                    paymentMethod: 'cash'
+                }
+            ];
+            
+            updateRidesList();
+        }
+        
+        async function loadRideStats(userId) {
+            try {
+                const completedRides = currentRides.filter(ride => ride.status === 'completed');
+                const cancelledRides = currentRides.filter(ride => ride.status === 'cancelled');
+                
+                let totalSpent = 0;
+                let totalSaved = 0;
+                
+                completedRides.forEach(ride => {
+                    totalSpent += ride.finalPrice || ride.maxPrice || 0;
+                    totalSaved += (ride.maxPrice || 0) - (ride.finalPrice || ride.maxPrice || 0);
+                });
+                
+                // Update stats
+                document.getElementById('totalRidesCount').textContent = currentRides.length;
+                document.getElementById('completedRidesCount').textContent = completedRides.length;
+                document.getElementById('totalSpentAmount').textContent = `Rs ${totalSpent}`;
+                document.getElementById('totalSavedAmount').textContent = `Rs ${totalSaved}`;
+                
+            } catch (error) {
+                console.error('Error loading ride stats:', error);
+            }
+        }
+        
+        function updateRidesList() {
+            const ridesList = document.getElementById('ridesList');
+            const filteredRides = filterRides(currentRides);
+            
+            if (filteredRides.length === 0) {
+                ridesList.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-car fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No rides found for selected filters</p>
+                        <a href="/pages/book-ride.html" class="btn btn-primary">
+                            Book a New Ride
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+            
+            ridesList.innerHTML = '';
+            filteredRides.forEach(ride => {
+                ridesList.appendChild(createRideCard(ride));
+            });
+            
+            // Show pagination if needed
+            if (filteredRides.length > 5) {
+                document.getElementById('pagination').style.display = 'block';
+            } else {
+                document.getElementById('pagination').style.display = 'none';
+            }
+        }
+        
+        function filterRides(rides) {
+            let filtered = rides;
+            
+            // Filter by status
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(ride => ride.status === currentFilter);
+            }
+            
+            // Filter by date range
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            
+            if (dateFrom) {
+                const fromDate = new Date(dateFrom);
+                filtered = filtered.filter(ride => {
+                    const rideDate = ride.createdAt?.toDate ? ride.createdAt.toDate() : new Date(ride.createdAt);
+                    return rideDate >= fromDate;
+                });
+            }
+            
+            if (dateTo) {
+                const toDate = new Date(dateTo);
+                toDate.setHours(23, 59, 59, 999);
+                filtered = filtered.filter(ride => {
+                    const rideDate = ride.createdAt?.toDate ? ride.createdAt.toDate() : new Date(ride.createdAt);
+                    return rideDate <= toDate;
+                });
+            }
+            
+            // Filter by vehicle type
+            const vehicleFilter = document.getElementById('vehicleFilter').value;
+            if (vehicleFilter !== 'all') {
+                filtered = filtered.filter(ride => ride.vehicleType === vehicleFilter);
+            }
+            
+            return filtered;
+        }
+        
+        function createRideCard(ride) {
+            const card = document.createElement('div');
+            card.className = `ride-history-card ${ride.status}`;
+            card.dataset.rideId = ride.id;
+            
+            const rideDate = ride.createdAt?.toDate ? ride.createdAt.toDate() : new Date(ride.createdAt);
+            const formattedDate = rideDate.toLocaleDateString();
+            const formattedTime = rideDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const vehicleIcons = {
+                'bike': 'fas fa-motorcycle',
+                'rickshaw': 'fas fa-rickshaw',
+                'loader': 'fas fa-truck-loading',
+                'car': 'fas fa-car',
+                'premium': 'fas fa-car-alt'
+            };
+            
+            const statusColors = {
+                'completed': 'success',
+                'cancelled': 'danger',
+                'active': 'primary',
+                'pending': 'warning'
+            };
+            
+            const statusText = {
+                'completed': 'Completed',
+                'cancelled': 'Cancelled',
+                'active': 'Active',
+                'pending': 'Pending'
+            };
+            
+            const price = ride.finalPrice || ride.maxPrice || 0;
+            const saved = ride.maxPrice - price;
+            
+            card.innerHTML = `
+                <div class="row align-items-center">
+                    <div class="col-md-1 text-center">
+                        <i class="${vehicleIcons[ride.vehicleType] || 'fas fa-car'} fa-2x text-primary"></i>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="mb-1">${ride.pickup?.area || 'N/A'} → ${ride.destination?.area || 'N/A'}</h6>
+                        <small class="text-muted">
+                            <i class="fas fa-calendar-alt"></i> ${formattedDate} • 
+                            <i class="fas fa-clock"></i> ${formattedTime}
+                        </small>
+                        ${ride.driverName ? `
+                            <div class="mt-1">
+                                <small>
+                                    <i class="fas fa-user"></i> ${ride.driverName}
+                                    ${ride.driverRating ? `<i class="fas fa-star text-warning ms-2"></i> ${ride.driverRating}` : ''}
+                                </small>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-1">
+                            <span class="badge bg-${statusColors[ride.status]}">
+                                ${statusText[ride.status]}
+                            </span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-users"></i> ${ride.passengers || 1} Passenger
+                        </small>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <h5 class="text-primary mb-1">Rs ${price}</h5>
+                        ${ride.status === 'completed' && saved > 0 ? `
+                            <small class="text-success">
+                                <i class="fas fa-piggy-bank"></i> Saved: Rs ${saved}
+                            </small>
+                        ` : ''}
+                    </div>
+                    <div class="col-md-1 text-end">
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewRideDetails('${ride.id}', event)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        function setupFilters() {
+            // Filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    currentFilter = this.dataset.filter;
+                    updateRidesList();
+                });
+            });
+            
+            // Date filters
+            document.getElementById('dateFrom').addEventListener('change', updateRidesList);
+            document.getElementById('dateTo').addEventListener('change', updateRidesList);
+            
+            // Vehicle filter
+            document.getElementById('vehicleFilter').addEventListener('change', updateRidesList);
+            
+            // Set default date range (last 30 days)
+            const today = new Date();
+            const lastMonth = new Date();
+            lastMonth.setDate(today.getDate() - 30);
+            
+            document.getElementById('dateFrom').valueAsDate = lastMonth;
+            document.getElementById('dateTo').valueAsDate = today;
+        }
+        
+        function viewRideDetails(rideId, event = null) {
+            if (event) event.stopPropagation();
+            
+            const ride = currentRides.find(r => r.id === rideId);
+            if (!ride) return;
+            
+            const rideDate = ride.createdAt?.toDate ? ride.createdAt.toDate() : new Date(ride.createdAt);
+            const completedDate = ride.completedAt?.toDate ? ride.completedAt.toDate() : 
+                                 (ride.completedAt ? new Date(ride.completedAt) : null);
+            
+            document.getElementById('rideDetailsContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Ride Information</h6>
+                        <table class="table table-sm">
+                            <tr><th>Ride ID:</th><td>${ride.id}</td></tr>
+                            <tr><th>From:</th><td>${ride.pickup?.area || 'N/A'}, ${ride.pickup?.city || 'N/A'}</td></tr>
+                            <tr><th>To:</th><td>${ride.destination?.area || 'N/A'}, ${ride.destination?.city || 'N/A'}</td></tr>
+                            <tr><th>Vehicle Type:</th><td>${ride.vehicleType || 'N/A'}</td></tr>
+                            <tr><th>Passengers:</th><td>${ride.passengers || 1}</td></tr>
+                            <tr><th>Status:</th><td>${ride.status}</td></tr>
+                            <tr><th>Booked:</th><td>${rideDate.toLocaleString()}</td></tr>
+                            ${completedDate ? `
+                                <tr><th>Completed:</th><td>${completedDate.toLocaleString()}</td></tr>
+                            ` : ''}
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Payment Information</h6>
+                        <table class="table table-sm">
+                            <tr><th>Maximum Price:</th><td>Rs ${ride.maxPrice || 0}</td></tr>
+                            <tr><th>Final Price:</th><td>Rs ${ride.finalPrice || ride.maxPrice || 0}</td></tr>
+                            ${ride.finalPrice && ride.maxPrice > ride.finalPrice ? `
+                                <tr><th>Amount Saved:</th><td class="text-success">Rs ${ride.maxPrice - ride.finalPrice}</td></tr>
+                            ` : ''}
+                            <tr><th>Payment Method:</th><td>${ride.paymentMethod || 'Cash'}</td></tr>
+                            <tr><th>Commission (15%):</th><td>Rs ${Math.round((ride.finalPrice || ride.maxPrice || 0) * 0.15)}</td></tr>
+                        </table>
+                        
+                        ${ride.driverName ? `
+                            <h6 class="mt-3">Driver Information</h6>
+                            <table class="table table-sm">
+                                <tr><th>Name:</th><td>${ride.driverName}</td></tr>
+                                ${ride.driverRating ? `<tr><th>Rating:</th><td>${ride.driverRating} <i class="fas fa-star text-warning"></i></td></tr>` : ''}
+                                ${ride.driverPhone ? `<tr><th>Contact:</th><td>${ride.driverPhone}</td></tr>` : ''}
+                            </table>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                ${ride.instructions ? `
+                    <div class="alert alert-info mt-3">
+                        <h6>Special Instructions:</h6>
+                        <p class="mb-0">${ride.instructions}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="alert alert-warning mt-3">
+                    <h6><i class="fas fa-info-circle"></i> Notes</h6>
+                    <ul class="mb-0 small">
+                        <li>15% commission is deducted from all rides</li>
+                        <li>Receipts are generated for completed rides only</li>
+                        <li>For issues, contact support via WhatsApp</li>
+                    </ul>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('rideDetailsModal'));
+            modal.show();
+        }
+        
+        function generateReceipt() {
+            const rideId = document.querySelector('#rideDetailsContent').dataset.rideId;
+            const ride = currentRides.find(r => r.id === rideId);
+            
+            if (!ride || ride.status !== 'completed') {
+                alert('Receipts can only be generated for completed rides');
+                return;
+            }
+            
+            const rideDate = ride.createdAt?.toDate ? ride.createdAt.toDate() : new Date(ride.createdAt);
+            const receiptNumber = 'RC' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+            
+            document.getElementById('receiptContent').innerHTML = `
+                <div class="receipt" id="receiptPrint">
+                    <div class="text-center mb-4">
+                        <h3 class="text-primary">DriveKar</h3>
+                        <p class="mb-0">Ride Receipt</p>
+                        <small>Receipt #: ${receiptNumber}</small>
+                    </div>
+                    
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Receipt Date:</th>
+                            <td>${new Date().toLocaleDateString()}</td>
+                        </tr>
+                        <tr>
+                            <th>Ride Date:</th>
+                            <td>${rideDate.toLocaleDateString()}</td>
+                        </tr>
+                        <tr>
+                            <th>Ride ID:</th>
+                            <td>${ride.id}</td>
+                        </tr>
+                    </table>
+                    
+                    <h6 class="mt-4">Ride Details</h6>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>From:</th>
+                            <td>${ride.pickup?.area || 'N/A'}, ${ride.pickup?.city || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <th>To:</th>
+                            <td>${ride.destination?.area || 'N/A'}, ${ride.destination?.city || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <th>Vehicle:</th>
+                            <td>${ride.vehicleType || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                            <th>Driver:</th>
+                            <td>${ride.driverName || 'N/A'}</td>
+                        </tr>
+                    </table>
+                    
+                    <h6 class="mt-4">Payment Details</h6>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Maximum Price:</th>
+                            <td class="text-end">Rs ${ride.maxPrice || 0}.00</td>
+                        </tr>
+                        <tr>
+                            <th>Final Price:</th>
+                            <td class="text-end">Rs ${ride.finalPrice || ride.maxPrice || 0}.00</td>
+                        </tr>
+                        <tr>
+                            <th>Amount Saved:</th>
+                            <td class="text-end text-success">Rs ${ride.maxPrice - (ride.finalPrice || ride.maxPrice || 0)}.00</td>
+                        </tr>
+                        <tr>
+                            <th>Commission (15%):</th>
+                            <td class="text-end">Rs ${Math.round((ride.finalPrice || ride.maxPrice || 0) * 0.15)}.00</td>
+                        </tr>
+                        <tr class="table-primary">
+                            <th><strong>Total Paid:</strong></th>
+                            <td class="text-end"><strong>Rs ${ride.finalPrice || ride.maxPrice || 0}.00</strong></td>
+                        </tr>
+                    </table>
+                    
+                    <div class="mt-4">
+                        <h6>Payment Method: ${ride.paymentMethod || 'Cash'}</h6>
+                        <p class="mb-0 small text-muted">
+                            This is an automated receipt. For any queries, contact support.
+                        </p>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <p class="small text-muted mb-0">
+                            Thank you for choosing DriveKar!<br>
+                            Support: 0322-9814170 • www.drivekar.com
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            // Close ride details modal
+            bootstrap.Modal.getInstance(document.getElementById('rideDetailsModal')).hide();
+            
+            // Show receipt modal
+            const receiptModal = new bootstrap.Modal(document.getElementById('receiptModal'));
+            receiptModal.show();
+        }
+        
+        function printReceipt() {
+            const printContent = document.getElementById('receiptPrint').innerHTML;
+            const originalContent = document.body.innerHTML;
+            
+            document.body.innerHTML = printContent;
+            window.print();
+            document.body.innerHTML = originalContent;
+            
+            // Re-initialize modal
+            const receiptModal = new bootstrap.Modal(document.getElementById('receiptModal'));
+            receiptModal.show();
+        }
+        
+        function downloadReceipt() {
+            alert('Receipt download feature will be implemented soon.');
+            // In real app, generate PDF and download
+        }
+        
+        function exportRides() {
+            const filteredRides = filterRides(currentRides);
+            
+            if (filteredRides.length === 0) {
+                alert('No rides to export');
+                return;
+            }
+            
+            // Create CSV content
+            let csv = 'Ride ID,From,To,Vehicle,Price,Status,Date,Driver\n';
+            
+            filteredRides.forEach(ride => {
+                const rideDate = ride.createdAt?.toDate ? ride.createdAt.toDate() : new Date(ride.createdAt);
+                csv += `"${ride.id}","${ride.pickup?.area || ''}","${ride.destination?.area || ''}",`;
+                csv += `"${ride.vehicleType || ''}","${ride.finalPrice || ride.maxPrice || 0}",`;
+                csv += `"${ride.status}","${rideDate.toLocaleDateString()}","${ride.driverName || ''}"\n`;
+            });
+            
+            // Create download link
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `drivekar-rides-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            alert(`Exported ${filteredRides.length} rides to CSV`);
+        }
+    </script>
+</body>
+</html>

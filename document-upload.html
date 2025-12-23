@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documents - DriveKar</title>
+    
+    <!-- Firebase SDK -->
+    <script type="module" src="/assets/js/firebase-config.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    
+    <style>
+        .document-card {
+            border: 2px dashed #dee2e6;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            height: 100%;
+        }
+        .document-card:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+        .document-card.uploaded {
+            border-style: solid;
+            border-color: #10b981;
+            background-color: rgba(16, 185, 129, 0.05);
+        }
+        .document-card.rejected {
+            border-color: #ef4444;
+            background-color: rgba(239, 68, 68, 0.05);
+        }
+        .document-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        .status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .upload-progress {
+            height: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<script>
+  alert("Driver registration is temporarily disabled. Please contact admin.");
+  window.location.href = "/pages/dashboard.html";
+</script>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/pages/dashboard.html">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <span class="navbar-text">
+                <i class="fas fa-file-upload"></i> Document Upload
+            </span>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Instructions -->
+        <div class="alert alert-info mb-4">
+            <h5><i class="fas fa-info-circle"></i> Document Verification Process</h5>
+            <ol class="mb-0">
+                <li>Upload clear photos of all required documents</li>
+                <li>Click "Send for Verification" button</li>
+                <li>Documents will be sent to admin via WhatsApp</li>
+                <li>Admin will verify within 24 hours</li>
+                <li>You will receive notification when verified</li>
+                <li>Start accepting rides after verification</li>
+            </ol>
+        </div>
+
+        <!-- Document Upload Cards -->
+        <div class="row">
+            <!-- CNIC Front -->
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card document-card" id="cnicFrontCard">
+                    <div class="card-body">
+                        <i class="fas fa-id-card fa-3x text-primary mb-3"></i>
+                        <h5>CNIC Front Side</h5>
+                        <p class="text-muted small">Upload clear photo of CNIC front side</p>
+                        
+                        <div id="cnicFrontPreview"></div>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-outline-primary" onclick="uploadDocument('cnicFront')">
+                                <i class="fas fa-upload"></i> Upload
+                            </button>
+                        </div>
+                        
+                        <div class="progress upload-progress" id="cnicFrontProgress" style="display: none;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                        
+                        <div id="cnicFrontStatus" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CNIC Back -->
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card document-card" id="cnicBackCard">
+                    <div class="card-body">
+                        <i class="fas fa-id-card fa-3x text-primary mb-3"></i>
+                        <h5>CNIC Back Side</h5>
+                        <p class="text-muted small">Upload clear photo of CNIC back side</p>
+                        
+                        <div id="cnicBackPreview"></div>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-outline-primary" onclick="uploadDocument('cnicBack')">
+                                <i class="fas fa-upload"></i> Upload
+                            </button>
+                        </div>
+                        
+                        <div class="progress upload-progress" id="cnicBackProgress" style="display: none;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                        
+                        <div id="cnicBackStatus" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Driver License -->
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card document-card" id="licenseCard">
+                    <div class="card-body">
+                        <i class="fas fa-id-badge fa-3x text-success mb-3"></i>
+                        <h5>Driver License</h5>
+                        <p class="text-muted small">Valid driving license photo</p>
+                        
+                        <div id="licensePreview"></div>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-outline-primary" onclick="uploadDocument('license')">
+                                <i class="fas fa-upload"></i> Upload
+                            </button>
+                        </div>
+                        
+                        <div class="progress upload-progress" id="licenseProgress" style="display: none;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                        
+                        <div id="licenseStatus" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Registration -->
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card document-card" id="vehicleCard">
+                    <div class="card-body">
+                        <i class="fas fa-file-contract fa-3x text-warning mb-3"></i>
+                        <h5>Vehicle Papers</h5>
+                        <p class="text-muted small">Vehicle registration document</p>
+                        
+                        <div id="vehiclePreview"></div>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-outline-primary" onclick="uploadDocument('vehicle')">
+                                <i class="fas fa-upload"></i> Upload
+                            </button>
+                        </div>
+                        
+                        <div class="progress upload-progress" id="vehicleProgress" style="display: none;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                        
+                        <div id="vehicleStatus" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Photo -->
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card document-card" id="vehiclePhotoCard">
+                    <div class="card-body">
+                        <i class="fas fa-car fa-3x text-info mb-3"></i>
+                        <h5>Vehicle Photo</h5>
+                        <p class="text-muted small">Clear photo of your vehicle</p>
+                        
+                        <div id="vehiclePhotoPreview"></div>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-outline-primary" onclick="uploadDocument('vehiclePhoto')">
+                                <i class="fas fa-upload"></i> Upload
+                            </button>
+                        </div>
+                        
+                        <div class="progress upload-progress" id="vehiclePhotoProgress" style="display: none;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                        
+                        <div id="vehiclePhotoStatus" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Verification Status -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clipboard-check"></i> Verification Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table">
+                            <tr>
+                                <td>CNIC Verification:</td>
+                                <td>
+                                    <span id="cnicStatusBadge" class="badge bg-secondary">Pending</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>License Verification:</td>
+                                <td>
+                                    <span id="licenseStatusBadge" class="badge bg-secondary">Pending</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Vehicle Verification:</td>
+                                <td>
+                                    <span id="vehicleStatusBadge" class="badge bg-secondary">Pending</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Overall Status:</td>
+                                <td>
+                                    <span id="overallStatusBadge" class="badge bg-warning">Incomplete</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-warning" id="overallStatusAlert">
+                            <h6>Status: <span id="overallStatusText">Incomplete</span></h6>
+                            <p class="mb-0" id="statusMessage">
+                                Please upload all required documents for verification.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-paper-plane"></i> Send for Verification
+                </h5>
+                <p class="text-muted">
+                    After uploading all documents, click below to send them to admin for verification.
+                </p>
+                
+                <div class="d-grid gap-2 d-md-block">
+                    <button class="btn btn-primary" id="sendVerificationBtn" onclick="sendForVerification()" disabled>
+                        <i class="fab fa-whatsapp"></i> Send via WhatsApp for Verification
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="checkDocumentStatus()">
+                        <i class="fas fa-sync-alt"></i> Check Status
+                    </button>
+                </div>
+
+                <div class="mt-4">
+                    <h6><i class="fas fa-headset"></i> Support Information</h6>
+                    <div class="alert alert-warning">
+                        <p class="mb-1"><strong>Document Verification WhatsApp:</strong> 0306-9529752</p>
+                        <p class="mb-0"><strong>Support WhatsApp:</strong> 0322-9814170</p>
+                        <p class="mb-0"><small>Include your User ID when sending documents</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal fade" id="uploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadModalTitle">Upload Document</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select File</label>
+                        <input type="file" class="form-control" id="documentFile" accept="image/*">
+                        <div class="form-text">
+                            Accepted formats: JPG, PNG (Max 5MB)
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Tips for clear document photos:</strong>
+                        <ul class="mb-0 small">
+                            <li>Ensure good lighting</li>
+                            <li>Place document on flat surface</li>
+                            <li>Capture all corners clearly</li>
+                            <li>Avoid glare and shadows</li>
+                            <li>All text should be readable</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="uploadDocumentBtn">
+                        <i class="fas fa-upload"></i> Upload
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        // Import Firebase modules
+        import { getAuth } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-storage.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+        import { app } from "/assets/js/firebase-config.js";
+        
+        // Initialize Firebase services
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+        const db = getFirestore(app);
+        
+        let currentDocumentType = '';
+        let uploadModal = null;
+        let currentUser = null;
+        
+        // Document type mapping
+        const documentTypes = {
+            'cnicFront': { name: 'CNIC Front Side', required: true },
+            'cnicBack': { name: 'CNIC Back Side', required: true },
+            'license': { name: 'Driver License', required: true },
+            'vehicle': { name: 'Vehicle Papers', required: true },
+            'vehiclePhoto': { name: 'Vehicle Photo', required: true }
+        };
+        
+        // Check authentication
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                console.log('User logged in:', user.uid);
+                await loadDocumentStatus();
+            } else {
+                alert('Please login first');
+                window.location.href = '/pages/login.html';
+            }
+        });
+        
+        function uploadDocument(type) {
+            currentDocumentType = type;
+            
+            document.getElementById('uploadModalTitle').textContent = 
+                `Upload ${documentTypes[type].name}`;
+            
+            // Reset file input
+            document.getElementById('documentFile').value = '';
+            
+            // Show modal
+            if (!uploadModal) {
+                uploadModal = new bootstrap.Modal(document.getElementById('uploadModal'));
+            }
+            uploadModal.show();
+        }
+        
+        // Handle document upload
+        document.getElementById('uploadDocumentBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('documentFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file to upload');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                alert('File size must be less than 5MB');
+                return;
+            }
+            
+            // Show loading state
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+            this.disabled = true;
+            
+            try {
+                // Show progress bar
+                const progressBar = document.getElementById(`${currentDocumentType}Progress`);
+                progressBar.style.display = 'block';
+                const progressBarInner = progressBar.querySelector('.progress-bar');
+                
+                // Create storage reference
+                const storageRef = ref(storage, `documents/${currentUser.uid}/${currentDocumentType}_${Date.now()}.jpg`);
+                
+                // Upload file
+                const uploadTask = uploadBytesResumable(storageRef, file);
+                
+                uploadTask.on('state_changed',
+                    (snapshot) => {
+                        // Update progress
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        progressBarInner.style.width = progress + '%';
+                        progressBarInner.textContent = Math.round(progress) + '%';
+                    },
+                    (error) => {
+                        console.error('Upload error:', error);
+                        alert('Upload failed: ' + error.message);
+                        
+                        // Reset button
+                        this.innerHTML = '<i class="fas fa-upload"></i> Upload';
+                        this.disabled = false;
+                        progressBar.style.display = 'none';
+                    },
+                    async () => {
+                        // Upload completed
+                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                        
+                        // Save to Firestore
+                        await saveDocumentInfo(currentDocumentType, downloadURL);
+                        
+                        // Update UI
+                        updateDocumentUI(currentDocumentType, downloadURL);
+                        
+                        // Close modal
+                        uploadModal.hide();
+                        
+                        // Reset button
+                        this.innerHTML = '<i class="fas fa-upload"></i> Upload';
+                        this.disabled = false;
+                        progressBar.style.display = 'none';
+                        
+                        // Check if all documents uploaded
+                        checkAllDocuments();
+                    }
+                );
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Upload failed: ' + error.message);
+                
+                // Reset button
+                this.innerHTML = '<i class="fas fa-upload"></i> Upload';
+                this.disabled = false;
+            }
+        });
+        
+        async function saveDocumentInfo(docType, url) {
+            try {
+                const userDocRef = doc(db, 'users', currentUser.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                let documents = {};
+                if (userDoc.exists()) {
+                    documents = userDoc.data().documents || {};
+                }
+                
+                documents[docType] = {
+                    url: url,
+                    uploadedAt: new Date().toISOString(),
+                    status: 'pending',
+                    verified: false
+                };
+                
+                await setDoc(userDocRef, { documents }, { merge: true });
+                console.log('Document saved:', docType);
+            } catch (error) {
+                console.error('Error saving document info:', error);
+            }
+        }
+        
+        async function loadDocumentStatus() {
+            try {
+                const userDocRef = doc(db, 'users', currentUser.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const documents = userData.documents || {};
+                    
+                    // Update UI for each document
+                    for (const [docType, docInfo] of Object.entries(documents)) {
+                        if (docInfo.url) {
+                            updateDocumentUI(docType, docInfo.url, docInfo.status);
+                        }
+                    }
+                    
+                    checkAllDocuments();
+                }
+            } catch (error) {
+                console.error('Error loading document status:', error);
+            }
+        }
+        
+        function updateDocumentUI(docType, url, status = 'pending') {
+            const card = document.getElementById(`${docType}Card`);
+            const preview = document.getElementById(`${docType}Preview`);
+            const statusDiv = document.getElementById(`${docType}Status`);
+            
+            card.classList.add('uploaded');
+            if (status === 'rejected') {
+                card.classList.add('rejected');
+                card.classList.remove('uploaded');
+            }
+            
+            preview.innerHTML = `
+                <img src="${url}" class="document-preview" alt="Preview" 
+                     style="max-height: 150px; border: 1px solid #ddd;">
+            `;
+            
+            let statusText = '';
+            let badgeClass = 'bg-secondary';
+            
+            if (status === 'pending') {
+                statusText = 'Pending Verification';
+                badgeClass = 'bg-warning';
+            } else if (status === 'approved') {
+                statusText = 'Verified ✓';
+                badgeClass = 'bg-success';
+            } else if (status === 'rejected') {
+                statusText = 'Rejected - Please reupload';
+                badgeClass = 'bg-danger';
+            }
+            
+            statusDiv.innerHTML = `
+                <span class="badge ${badgeClass}">${statusText}</span>
+            `;
+        }
+        
+        function checkAllDocuments() {
+            const documents = ['cnicFront', 'cnicBack', 'license', 'vehicle', 'vehiclePhoto'];
+            let uploadedCount = 0;
+            
+            documents.forEach(docType => {
+                if (document.getElementById(`${docType}Card`).classList.contains('uploaded')) {
+                    uploadedCount++;
+                }
+            });
+            
+            const sendBtn = document.getElementById('sendVerificationBtn');
+            const overallStatusText = document.getElementById('overallStatusText');
+            const overallStatusBadge = document.getElementById('overallStatusBadge');
+            const statusMessage = document.getElementById('statusMessage');
+            const statusAlert = document.getElementById('overallStatusAlert');
+            
+            if (uploadedCount === documents.length) {
+                sendBtn.disabled = false;
+                overallStatusText.textContent = 'Ready for Verification';
+                overallStatusBadge.className = 'badge bg-success';
+                statusMessage.textContent = 'All documents uploaded. Click "Send for Verification" button.';
+                statusAlert.className = 'alert alert-success';
+            } else {
+                sendBtn.disabled = true;
+                overallStatusText.textContent = 'Incomplete';
+                overallStatusBadge.className = 'badge bg-warning';
+                statusMessage.textContent = 
+                    `${uploadedCount}/5 documents uploaded. Please upload all required documents.`;
+                statusAlert.className = 'alert alert-warning';
+            }
+        }
+        
+        function sendForVerification() {
+            const whatsappNumber = '923069529752'; // 0306-9529752
+            const message = `Document Verification Request - User ID: ${currentUser.uid}`;
+            const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+            
+            window.open(whatsappURL, '_blank');
+            
+            // Update status in database
+            updateVerificationStatus('submitted');
+            
+            // Show success message
+            alert('Document verification request sent to admin. You will be notified once verified.');
+        }
+        
+        async function updateVerificationStatus(status) {
+            try {
+                const userDocRef = doc(db, 'users', currentUser.uid);
+                await updateDoc(userDocRef, {
+                    'verificationStatus': status,
+                    'verificationRequestedAt': new Date().toISOString()
+                });
+            } catch (error) {
+                console.error('Error updating verification status:', error);
+            }
+        }
+        
+        async function checkDocumentStatus() {
+            try {
+                const userDocRef = doc(db, 'users', currentUser.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const documents = userData.documents || {};
+                    
+                    // Update status badges
+                    const cnicFrontStatus = documents.cnicFront?.status || 'pending';
+                    const cnicBackStatus = documents.cnicBack?.status || 'pending';
+                    const licenseStatus = documents.license?.status || 'pending';
+                    const vehicleStatus = documents.vehicle?.status || 'pending';
+                    
+                    document.getElementById('cnicStatusBadge').className = 
+                        `badge ${getStatusClass(cnicFrontStatus === 'approved' && cnicBackStatus === 'approved' ? 'approved' : 'pending')}`;
+                    document.getElementById('cnicStatusBadge').textContent = 
+                        cnicFrontStatus === 'approved' && cnicBackStatus === 'approved' ? 'Verified' : 'Pending';
+                    
+                    document.getElementById('licenseStatusBadge').className = 
+                        `badge ${getStatusClass(licenseStatus)}`;
+                    document.getElementById('licenseStatusBadge').textContent = 
+                        licenseStatus === 'approved' ? 'Verified' : 'Pending';
+                    
+                    document.getElementById('vehicleStatusBadge').className = 
+                        `badge ${getStatusClass(vehicleStatus)}`;
+                    document.getElementById('vehicleStatusBadge').textContent = 
+                        vehicleStatus === 'approved' ? 'Verified' : 'Pending';
+                    
+                    alert('Document status updated. Please refresh the page to see changes.');
+                }
+            } catch (error) {
+                console.error('Error checking document status:', error);
+                alert('Error checking status: ' + error.message);
+            }
+        }
+        
+        function getStatusClass(status) {
+            switch(status) {
+                case 'approved': return 'bg-success';
+                case 'rejected': return 'bg-danger';
+                case 'pending': return 'bg-warning';
+                default: return 'bg-secondary';
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            const auth = getAuth();
+            auth.onAuthStateChanged((user) => {
+                if (!user) {
+                    window.location.href = '/pages/login.html';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

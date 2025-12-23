@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Become a Driver - DriveKar</title>
+    
+    <!-- Firebase SDK -->
+    <script type="module" src="/assets/js/firebase-config.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    
+    <style>
+        .registration-step {
+            display: none;
+        }
+        .registration-step.active {
+            display: block;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+        .step-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            background-color: #e2e8f0;
+            color: #64748b;
+        }
+        .step-circle.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .document-upload-box {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .document-upload-box:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+        .requirements-list {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark bg-success">
+        <div class="container">
+            <a class="navbar-brand" href="/pages/dashboard.html">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <span class="navbar-text">
+                <i class="fas fa-id-card"></i> Become a Driver
+            </span>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step-circle active" id="stepCircle1">1</div>
+            <div class="step-circle" id="stepCircle2">2</div>
+            <div class="step-circle" id="stepCircle3">3</div>
+            <div class="step-circle" id="stepCircle4">4</div>
+        </div>
+
+        <!-- Step 1: Vehicle Information -->
+        <div id="step1" class="registration-step active">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">
+                        <i class="fas fa-car"></i> Vehicle Information
+                    </h4>
+                    <p class="text-muted">Tell us about your vehicle</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Vehicle Type *</label>
+                            <select class="form-select" id="vehicleType" required>
+                                <option value="">Select Vehicle Type</option>
+                                <option value="bike">Motorcycle</option>
+                                <option value="rickshaw">Rickshaw</option>
+                                <option value="loader">Loader Rickshaw</option>
+                                <option value="car">Car</option>
+                                <option value="premium">Premium Car</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Vehicle Number *</label>
+                            <input type="text" class="form-control" id="vehicleNumber" 
+                                   placeholder="ABC-123" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Vehicle Model/Year</label>
+                            <input type="text" class="form-control" id="vehicleModel" 
+                                   placeholder="e.g., Toyota Corolla 2020">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Vehicle Color</label>
+                            <input type="text" class="form-control" id="vehicleColor" 
+                                   placeholder="e.g., White, Black, etc.">
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Vehicle Requirements</h6>
+                        <ul class="mb-0 small">
+                            <li>Vehicle must be registered in your name</li>
+                            <li>Valid vehicle papers required</li>
+                            <li>Vehicle must be in good condition</li>
+                            <li>Insurance must be valid</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="text-end">
+                        <button class="btn btn-primary" onclick="nextStep(2)">
+                            Next <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Service Areas -->
+        <div id="step2" class="registration-step">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">
+                        <i class="fas fa-map-marker-alt"></i> Service Areas
+                    </h4>
+                    <p class="text-muted">Select areas where you will provide service</p>
+                    
+                    <div class="mb-4">
+                        <h6>Select Your City</h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check city-option" onclick="selectServiceCity('rahim-yar-khan')">
+                                    <input class="form-check-input" type="radio" name="serviceCity" 
+                                           id="serviceCity1" value="rahim-yar-khan">
+                                    <label class="form-check-label" for="serviceCity1">
+                                        <i class="fas fa-city"></i> Rahim Yar Khan
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check city-option" onclick="selectServiceCity('sadiqabad')">
+                                    <input class="form-check-input" type="radio" name="serviceCity" 
+                                           id="serviceCity2" value="sadiqabad">
+                                    <label class="form-check-label" for="serviceCity2">
+                                        <i class="fas fa-building"></i> Sadiqabad
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check city-option" onclick="selectServiceCity('khanpur')">
+                                    <input class="form-check-input" type="radio" name="serviceCity" 
+                                           id="serviceCity3" value="khanpur">
+                                    <label class="form-check-label" for="serviceCity3">
+                                        <i class="fas fa-home"></i> Khanpur
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4" id="serviceAreasSection" style="display: none;">
+                        <h6>Select Service Areas in <span id="selectedCityName">City</span></h6>
+                        <div class="areas-checkbox-container" id="areasCheckboxContainer">
+                            <!-- Areas will be populated here -->
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="selectAllAreas()">
+                                <i class="fas fa-check-square"></i> Select All
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                    onclick="deselectAllAreas()">
+                                <i class="fas fa-square"></i> Deselect All
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-lightbulb"></i> Tips for Selecting Areas</h6>
+                        <ul class="mb-0 small">
+                            <li>Select areas where you are most familiar</li>
+                            <li>Choose areas close to your home/work</li>
+                            <li>More areas = More ride requests</li>
+                            <li>You can update areas later</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary" onclick="prevStep(1)">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn btn-primary" onclick="nextStep(3)">
+                            Next <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Documents Upload -->
+        <div id="step3" class="registration-step">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">
+                        <i class="fas fa-file-upload"></i> Required Documents
+                    </h4>
+                    <p class="text-muted">Upload clear photos of required documents</p>
+                    
+                    <div class="requirements-list">
+                        <h6><i class="fas fa-clipboard-check"></i> Required Documents List:</h6>
+                        <ol class="mb-0">
+                            <li>CNIC Front & Back Side (Clear photo)</li>
+                            <li>Valid Driving License</li>
+                            <li>Vehicle Registration Papers</li>
+                            <li>Vehicle Photo (Clear front view)</li>
+                            <li>Vehicle Insurance (If available)</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="document-upload-box" onclick="uploadDocument('cnic')">
+                                <i class="fas fa-id-card fa-3x text-primary mb-3"></i>
+                                <h5>CNIC Front & Back</h5>
+                                <p class="text-muted small">Upload clear photos of CNIC both sides</p>
+                                <div id="cnicUploadStatus" class="mt-2"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="document-upload-box" onclick="uploadDocument('license')">
+                                <i class="fas fa-id-badge fa-3x text-success mb-3"></i>
+                                <h5>Driving License</h5>
+                                <p class="text-muted small">Valid driving license photo</p>
+                                <div id="licenseUploadStatus" class="mt-2"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="document-upload-box" onclick="uploadDocument('vehicle')">
+                                <i class="fas fa-file-contract fa-3x text-warning mb-3"></i>
+                                <h5>Vehicle Papers</h5>
+                                <p class="text-muted small">Vehicle registration documents</p>
+                                <div id="vehicleUploadStatus" class="mt-2"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="document-upload-box" onclick="uploadDocument('vehiclePhoto')">
+                                <i class="fas fa-car fa-3x text-info mb-3"></i>
+                                <h5>Vehicle Photo</h5>
+                                <p class="text-muted small">Clear photo of your vehicle</p>
+                                <div id="vehiclePhotoUploadStatus" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-camera"></i> Photo Guidelines</h6>
+                        <ul class="mb-0 small">
+                            <li>Use good lighting</li>
+                            <li>Ensure all text is readable</li>
+                            <li>Capture entire document</li>
+                            <li>Avoid glare and shadows</li>
+                            <li>File size: Max 5MB per photo</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary" onclick="prevStep(2)">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn btn-primary" onclick="nextStep(4)" id="nextToStep4" disabled>
+                            Next <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Review & Submit -->
+        <div id="step4" class="registration-step">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">
+                        <i class="fas fa-clipboard-check"></i> Review & Submit
+                    </h4>
+                    <p class="text-muted">Review your information before submitting</p>
+                    
+                    <!-- Review Summary -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5>Application Summary</h5>
+                            <table class="table">
+                                <tr>
+                                    <th style="width: 40%">Vehicle Type:</th>
+                                    <td id="reviewVehicleType">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Vehicle Number:</th>
+                                    <td id="reviewVehicleNumber">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Service City:</th>
+                                    <td id="reviewServiceCity">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Service Areas:</th>
+                                    <td id="reviewServiceAreas">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Documents Uploaded:</th>
+                                    <td id="reviewDocuments">0/4</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Verification Process -->
+                    <div class="alert alert-info mb-4">
+                        <h6><i class="fas fa-info-circle"></i> Verification Process</h6>
+                        <ol class="mb-0">
+                            <li>Submit your application</li>
+                            <li>Documents sent to admin for verification</li>
+                            <li>Verification usually takes 24 hours</li>
+                            <li>You will receive WhatsApp notification</li>
+                            <li>Once verified, you can go online and accept rides</li>
+                        </ol>
+                    </div>
+                    
+                    <!-- Terms & Conditions -->
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" id="driverTerms" required>
+                        <label class="form-check-label" for="driverTerms">
+                            I agree to DriveKar Driver Terms & Conditions, and understand that:
+                            <ul class="small mt-2 mb-0">
+                                <li>15% commission will be deducted from all rides</li>
+                                <li>I must maintain valid documents</li>
+                                <li>I am responsible for my vehicle maintenance</li>
+                                <li>I will provide professional service to riders</li>
+                                <li>Platform can suspend account for violations</li>
+                            </ul>
+                        </label>
+                    </div>
+                    
+                    <!-- Support Information -->
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-headset"></i> Support Contact</h6>
+                        <p class="mb-1">
+                            <strong>Document Verification WhatsApp:</strong> 0306-9529752<br>
+                            <strong>General Support:</strong> 0322-9814170
+                        </p>
+                        <p class="mb-0 small">
+                            After submission, you can contact above numbers for status updates.
+                        </p>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary" onclick="prevStep(3)">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn btn-success" onclick="submitDriverApplication()">
+                            <i class="fas fa-paper-plane"></i> Submit Application
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Upload Modal -->
+    <div class="modal fade" id="uploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadModalTitle">Upload Document</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select File</label>
+                        <input type="file" class="form-control" id="documentFile" accept="image/*" multiple>
+                        <div class="form-text">
+                            You can select multiple files for CNIC (front & back)
+                        </div>
+                    </div>
+                    
+                    <div id="filePreview" class="mb-3"></div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Tips:</strong> Ensure documents are clear and all text is readable.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="uploadDocumentBtn">
+                        <i class="fas fa-upload"></i> Upload
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // City and area data
+        const cityAreas = {
+            'rahim-yar-khan': [
+                'Satellite Town', 'Model Town', 'Peoples Colony', 'Shahi Colony', 
+                'Scheme No.1', 'Scheme No.2', 'Fauji Colony', 'Railway Road', 
+                'Abu Dhabi Road', 'Katchery Road', 'Sheikh Zayed Hospital Area'
+            ],
+            'sadiqabad': [
+                'Zikria Garden', 'Jinnah Town', 'Satellite Town', 'New Town', 
+                'Public Colony', 'Arain Colony', 'Railway Road', 'Ghalla Mandi', 
+                'College Road', 'Hospital Road', 'Chowk Fawara'
+            ],
+            'khanpur': [
+                'Model Town', 'Satellite Town', 'Madina Colony', 'Gulshan Colony', 
+                'Iqbal Colony', 'Railway Colony', 'Railway Road', 'Circular Road', 
+                'College Road', 'Hospital Road', 'Adda Zahir Pir'
+            ]
+        };
+        
+        let currentStep = 1;
+        let selectedServiceCity = '';
+        let selectedServiceAreas = [];
+        let uploadedDocuments = {
+            cnic: false,
+            license: false,
+            vehicle: false,
+            vehiclePhoto: false
+        };
+        let currentDocumentType = '';
+        
+        function nextStep(step) {
+            // Validate current step before proceeding
+            if (!validateStep(currentStep)) {
+                return;
+            }
+            
+            // Update step indicator
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`step${i}`).classList.remove('active');
+                document.getElementById(`stepCircle${i}`).classList.remove('active');
+            }
+            
+            // Show current step
+            document.getElementById(`step${step}`).classList.add('active');
+            document.getElementById(`stepCircle${step}`).classList.add('active');
+            
+            currentStep = step;
+            
+            // If moving to step 4, update review
+            if (step === 4) {
+                updateReview();
+            }
+        }
+        
+        function prevStep(step) {
+            nextStep(step);
+        }
+        
+        function validateStep(step) {
+            switch(step) {
+                case 1:
+                    const vehicleType = document.getElementById('vehicleType').value;
+                    const vehicleNumber = document.getElementById('vehicleNumber').value;
+                    
+                    if (!vehicleType || !vehicleNumber) {
+                        alert('Please fill all required vehicle information');
+                        return false;
+                    }
+                    return true;
+                    
+                case 2:
+                    if (!selectedServiceCity) {
+                        alert('Please select a service city');
+                        return false;
+                    }
+                    
+                    if (selectedServiceAreas.length === 0) {
+                        alert('Please select at least one service area');
+                        return false;
+                    }
+                    return true;
+                    
+                case 3:
+                    // Check if all documents are uploaded
+                    const uploadedCount = Object.values(uploadedDocuments).filter(Boolean).length;
+                    if (uploadedCount < 4) {
+                        alert(`Please upload all required documents. Uploaded: ${uploadedCount}/4`);
+                        return false;
+                    }
+                    return true;
+                    
+                default:
+                    return true;
+            }
+        }
+        
+        function selectServiceCity(city) {
+            selectedServiceCity = city;
+            
+            // Update UI
+            document.querySelectorAll('.city-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            
+            // Show areas section
+            document.getElementById('serviceAreasSection').style.display = 'block';
+            document.getElementById('selectedCityName').textContent = 
+                city.charAt(0).toUpperCase() + city.slice(1).replace(/-/g, ' ');
+            
+            // Populate areas
+            populateServiceAreas(city);
+        }
+        
+        function populateServiceAreas(city) {
+            const container = document.getElementById('areasCheckboxContainer');
+            container.innerHTML = '';
+            
+            if (cityAreas[city]) {
+                cityAreas[city].forEach(area => {
+                    const areaId = area.toLowerCase().replace(/\s+/g, '-');
+                    container.innerHTML += `
+                        <div class="form-check mb-2">
+                            <input class="form-check-input area-checkbox" 
+                                   type="checkbox" 
+                                   id="area-${areaId}" 
+                                   value="${area}"
+                                   onchange="updateSelectedAreas()">
+                            <label class="form-check-label" for="area-${areaId}">
+                                ${area}
+                            </label>
+                        </div>
+                    `;
+                });
+            }
+            
+            // Add "Other Areas" option
+            container.innerHTML += `
+                <div class="form-check mb-2">
+                    <input class="form-check-input area-checkbox" 
+                           type="checkbox" 
+                           id="area-other" 
+                           value="other"
+                           onchange="toggleOtherAreas()">
+                    <label class="form-check-label" for="area-other">
+                        Other Areas (Specify)
+                    </label>
+                </div>
+                <div id="otherAreasInput" style="display: none; margin-top: 10px;">
+                    <textarea class="form-control form-control-sm" 
+                              id="otherAreasText" 
+                              rows="2" 
+                              placeholder="Enter other area names, separated by commas"></textarea>
+                </div>
+            `;
+        }
+        
+        function updateSelectedAreas() {
+            selectedServiceAreas = [];
+            
+            // Get checked areas
+            document.querySelectorAll('.area-checkbox:checked').forEach(checkbox => {
+                if (checkbox.value !== 'other') {
+                    selectedServiceAreas.push(checkbox.value);
+                }
+            });
+            
+            // Add other areas if specified
+            const otherAreasText = document.getElementById('otherAreasText');
+            if (otherAreasText && otherAreasText.value.trim()) {
+                const otherAreas = otherAreasText.value.split(',').map(area => area.trim()).filter(area => area);
+                selectedServiceAreas.push(...otherAreas);
+            }
+            
+            console.log('Selected areas:', selectedServiceAreas);
+        }
+        
+        function toggleOtherAreas() {
+            const otherCheckbox = document.getElementById('area-other');
+            const otherAreasInput = document.getElementById('otherAreasInput');
+            
+            if (otherCheckbox.checked) {
+                otherAreasInput.style.display = 'block';
+            } else {
+                otherAreasInput.style.display = 'none';
+                document.getElementById('otherAreasText').value = '';
+            }
+            
+            updateSelectedAreas();
+        }
+        
+        function selectAllAreas() {
+            document.querySelectorAll('.area-checkbox').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            
+            const otherAreasInput = document.getElementById('otherAreasInput');
+            if (otherAreasInput) {
+                otherAreasInput.style.display = 'block';
+            }
+            
+            updateSelectedAreas();
+        }
+        
+        function deselectAllAreas() {
+            document.querySelectorAll('.area-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            const otherAreasInput = document.getElementById('otherAreasInput');
+            if (otherAreasInput) {
+                otherAreasInput.style.display = 'none';
+                document.getElementById('otherAreasText').value = '';
+            }
+            
+            updateSelectedAreas();
+        }
+        
+        function uploadDocument(type) {
+            currentDocumentType = type;
+            
+            // Set modal title
+            const documentTitles = {
+                'cnic': 'CNIC Front & Back',
+                'license': 'Driving License',
+                'vehicle': 'Vehicle Papers',
+                'vehiclePhoto': 'Vehicle Photo'
+            };
+            
+            document.getElementById('uploadModalTitle').textContent = 
+                `Upload ${documentTitles[type]}`;
+            
+            // Reset file input
+            document.getElementById('documentFile').value = '';
+            document.getElementById('filePreview').innerHTML = '';
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
+            modal.show();
+        }
+        
+        // Handle file selection preview
+        document.getElementById('documentFile').addEventListener('change', function() {
+            const preview = document.getElementById('filePreview');
+            preview.innerHTML = '';
+            
+            const files = this.files;
+            if (files.length > 0) {
+                preview.innerHTML = `<small>Selected ${files.length} file(s):</small><br>`;
+                
+                Array.from(files).forEach((file, index) => {
+                    preview.innerHTML += `
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fas fa-file-image text-primary me-2"></i>
+                            <small>${file.name} (${(file.size / 1024).toFixed(1)} KB)</small>
+                        </div>
+                    `;
+                });
+            }
+        });
+        
+        // Handle document upload
+        document.getElementById('uploadDocumentBtn').addEventListener('click', function() {
+            const files = document.getElementById('documentFile').files;
+            
+            if (files.length === 0) {
+                alert('Please select at least one file');
+                return;
+            }
+            
+            // Validate file sizes
+            let totalSize = 0;
+            Array.from(files).forEach(file => {
+                totalSize += file.size;
+            });
+            
+            if (totalSize > 10 * 1024 * 1024) { // 10MB total limit
+                alert('Total file size should be less than 10MB');
+                return;
+            }
+            
+            // Show loading state
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+            this.disabled = true;
+            
+            // Simulate upload (in real app, upload to Firebase Storage)
+            setTimeout(() => {
+                // Mark document as uploaded
+                uploadedDocuments[currentDocumentType] = true;
+                
+                // Update UI
+                const statusElement = document.getElementById(`${currentDocumentType}UploadStatus`);
+                if (statusElement) {
+                    statusElement.innerHTML = `
+                        <span class="badge bg-success">
+                            <i class="fas fa-check"></i> Uploaded
+                        </span>
+                    `;
+                }
+                
+                // Update upload count
+                updateUploadCount();
+                
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+                
+                // Reset button
+                this.innerHTML = '<i class="fas fa-upload"></i> Upload';
+                this.disabled = false;
+                
+            }, 2000);
+        });
+        
+        function updateUploadCount() {
+            const uploadedCount = Object.values(uploadedDocuments).filter(Boolean).length;
+            
+            // Enable/disable next button for step 3
+            if (uploadedCount >= 4) {
+                document.getElementById('nextToStep4').disabled = false;
+            }
+        }
+        
+        function updateReview() {
+            // Vehicle information
+            document.getElementById('reviewVehicleType').textContent = 
+                document.getElementById('vehicleType').options[document.getElementById('vehicleType').selectedIndex].text;
+            document.getElementById('reviewVehicleNumber').textContent = 
+                document.getElementById('vehicleNumber').value;
+            
+            // Service city
+            if (selectedServiceCity) {
+                document.getElementById('reviewServiceCity').textContent = 
+                    selectedServiceCity.charAt(0).toUpperCase() + selectedServiceCity.slice(1).replace(/-/g, ' ');
+            }
+            
+            // Service areas
+            document.getElementById('reviewServiceAreas').textContent = 
+                selectedServiceAreas.length > 0 ? 
+                selectedServiceAreas.slice(0, 3).join(', ') + 
+                (selectedServiceAreas.length > 3 ? ` (+${selectedServiceAreas.length - 3} more)` : '') : 
+                'None selected';
+            
+            // Documents
+            const uploadedCount = Object.values(uploadedDocuments).filter(Boolean).length;
+            document.getElementById('reviewDocuments').textContent = `${uploadedCount}/4`;
+        }
+        
+        async function submitDriverApplication() {
+            if (!document.getElementById('driverTerms').checked) {
+                alert('Please agree to the Terms & Conditions');
+                return;
+            }
+            
+            const submitBtn = document.querySelector('#step4 button.btn-success');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            submitBtn.disabled = true;
+            
+            try {
+                // In real app, save to Firebase
+                // For demo, simulate success
+                
+                // Get current user (assuming already logged in)
+                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                
+                // Prepare application data
+                const applicationData = {
+                    userId: user.uid || 'demo-user',
+                    vehicleType: document.getElementById('vehicleType').value,
+                    vehicleNumber: document.getElementById('vehicleNumber').value,
+                    vehicleModel: document.getElementById('vehicleModel').value,
+                    vehicleColor: document.getElementById('vehicleColor').value,
+                    serviceCity: selectedServiceCity,
+                    serviceAreas: selectedServiceAreas,
+                    documentsUploaded: uploadedDocuments,
+                    status: 'pending',
+                    submittedAt: new Date().toISOString()
+                };
+                
+                // Save to localStorage (in real app, save to Firestore)
+                localStorage.setItem('driverApplication', JSON.stringify(applicationData));
+                
+                // Update user type in localStorage
+                localStorage.setItem('userType', 'driver');
+                
+                // Show success message
+                setTimeout(() => {
+                    alert('Driver application submitted successfully!\n\n' +
+                          'Your documents have been sent for verification.\n' +
+                          'You will receive WhatsApp notification once verified (usually within 24 hours).\n\n' +
+                          'You can check status in Documents section.');
+                    
+                    // Redirect to driver dashboard
+                    window.location.href = '/pages/driver-dashboard.html';
+                    
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error submitting application:', error);
+                alert('Error submitting application: ' + error.message);
+                
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
+                submitBtn.disabled = false;
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add styles for city options
+            const style = document.createElement('style');
+            style.textContent = `
+                .city-option {
+                    padding: 15px;
+                    border: 2px solid #dee2e6;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                }
+                .city-option:hover {
+                    border-color: var(--primary-color);
+                    background-color: rgba(37, 99, 235, 0.05);
+                }
+                .city-option.selected {
+                    border-color: var(--primary-color);
+                    background-color: rgba(37, 99, 235, 0.1);
+                }
+                .areas-checkbox-container {
+                    max-height: 200px;
+                    overflow-y: auto;
+                    padding: 15px;
+                    border: 1px solid #dee2e6;
+                    border-radius: 8px;
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+</body>
+</html>
